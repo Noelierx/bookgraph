@@ -1,73 +1,78 @@
-# Welcome to your Lovable project
+# 📚 BookGraph
 
-## Project info
+**BookGraph** helps you explore the hidden connections between your books.  
+Search, collect, analyze, and visualize how your favorite reads relate to one another.
 
-**URL**: https://lovable.dev/projects/e00ba977-2d1c-4b1b-b82e-aaefe6eeb369
+---
 
-## How can I edit this code?
+## ✨ Features
 
-There are several ways of editing your application.
+- 🔎 **Search books** by *title*, *author*, or *ISBN* using the **OpenLibrary API**.  
+- 🧠 **Automatic enrichment**: fetches descriptions, subjects, and ISBNs (preferring ISBN-13).  
+- ✅ **Validation**: ISBN required for manual additions.  
+- 🕸️ **Interactive graph** powered by *ForceGraph2D* — fully responsive with drag / zoom / pan.  
+- 📖 **Book details** with ISBN, subjects, and description — includes *Edit* / *Delete*.  
+- 💾 **Import / Export** your collection as JSON.  
+- 💡 **Help modal** with tips for improving connections.  
+- 🧹 **Clear button** to reset search results.  
+- ✍️ **Manual book entry** with field validation.
 
-**Use Lovable**
+---
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/e00ba977-2d1c-4b1b-b82e-aaefe6eeb369) and start prompting.
+## 🧰 Local Development (Dev Container)
+ 
+To run locally:
 
-Changes made via Lovable will be committed automatically to this repo.
+<pre>
+# 1. Install dependencies
+npm install
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# 2. Start the development server
 npm run dev
-```
+</pre>
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 🚀 Quick Start
 
-**Use GitHub Codespaces**
+1. **Search** → choose a mode (*Title*, *Author*, *ISBN*), enter a query, then click **Search**.  
+2. **Clear** → click *Clear* to reset results.  
+3. **Add from results** → click *Add*. Duplicates are ignored.  
+4. **Add manually** → open *Add Book Manually* and fill in **ISBN**, **Title**, and **Author**.  
+5. **Import / Export** → manage your collection via JSON in the header.  
+6. **Analyze connections** → click *Analyze* to rebuild semantic links.  
+7. **Need help?** → open *Help* for suggestions (add descriptions, subjects, rerun *Analyze*).
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+---
 
-## What technologies are used for this project?
+## 🧩 Notable Implementations
 
-This project is built with:
+- **Descriptions**: gracefully extracted from strings or `{ value }` objects, with fallbacks to *work* or *edition* data.  
+- **ISBN handling**: cleans multiple identifier fields (`isbn`, `isbn_10`, `isbn_13`, `identifiers`); prefers ISBN-13 and converts from ISBN-10 if needed.  
+- **Data enrichment**: merges complementary data from editions/works to fill missing metadata.  
+- **Graph resizing**: dynamically fits its container using `ResizeObserver`.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+---
 
-## How can I deploy this project?
+## 🗂️ Key Components
 
-Simply open [Lovable](https://lovable.dev/projects/e00ba977-2d1c-4b1b-b82e-aaefe6eeb369) and click on Share -> Publish.
+| Component | Purpose |
+|------------|----------|
+| `BookGraph.tsx` | Responsive ForceGraph2D visualization |
+| `HelpModal.tsx` | Reusable modal with improvement tips |
+| `EditBookDialog.tsx` | Add/edit dialog with ISBN validation |
+| `BookDetails.tsx` | Displays ISBN, subjects, and description |
+| `openLibraryService.ts` | Data enrichment, ISBN normalization, description retrieval |
+| `Index.tsx` | Main page – import/export, state management, layout |
 
-## Can I connect a custom domain to my Lovable project?
+---
 
-Yes, you can!
+## 💡 Notes
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+- Data is saved in **localStorage** under the key `book-graph-data`.  
+- Enrichment triggers multiple **OpenLibrary** requests — may take a few seconds for large sets.  
+- If a book doesn’t connect to others, try adding or refining its **description** or **subjects**, then click *Analyze* again.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+---
+
+📖 **Happy exploring — may your bookshelf become a connected universe of ideas!** ✨
