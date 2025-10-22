@@ -57,6 +57,24 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        graph: {
+          node: {
+            primary: "hsl(var(--graph-node-primary))",
+            secondary: "hsl(var(--graph-node-secondary))",
+          },
+          link: {
+            DEFAULT: "hsl(var(--graph-link))",
+            strong: "hsl(var(--graph-link-strong))",
+          },
+        },
+      },
+      backgroundImage: {
+        'gradient-primary': 'var(--gradient-primary)',
+        'gradient-accent': 'var(--gradient-accent)',
+      },
+      boxShadow: {
+        'glow-primary': 'var(--glow-primary)',
+        'glow-accent': 'var(--glow-accent)',
       },
       borderRadius: {
         lg: "var(--radius)",
