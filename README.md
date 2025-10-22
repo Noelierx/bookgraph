@@ -3,6 +3,8 @@
 **BookGraph** helps you explore the hidden connections between your books.  
 Search, collect, analyze, and visualize how your favorite reads relate to one another.
 
+<img width="1443" height="854" alt="Capture d’écran 2025-10-22 à 17 52 50" src="https://github.com/user-attachments/assets/b328bd1a-ae42-40b9-aa2b-4da0d161c275" />
+
 ---
 
 ## ✨ Features
