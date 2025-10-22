@@ -28,15 +28,15 @@ export function SearchResults({ books, onAddBook, existingBookIds }: SearchResul
               const isAdded = existingBookIds.has(book.id);
               return (
                 <Card key={book.id} className="overflow-hidden">
-                  <div className="flex gap-4 p-4">
+                  <div className="flex gap-4 p-4 overflow-x-auto">
                     {book.coverUrl && (
                       <img 
                         src={book.coverUrl} 
                         alt={book.title}
-                        className="w-16 h-24 object-cover rounded"
+                        className="w-16 h-24 object-cover rounded shrink-0"
                       />
                     )}
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-[120px]">
                       <h3 className="font-semibold truncate">{book.title}</h3>
                       <p className="text-sm text-muted-foreground truncate">{book.author}</p>
                       {book.publishYear && (
@@ -48,7 +48,7 @@ export function SearchResults({ books, onAddBook, existingBookIds }: SearchResul
                       variant={isAdded ? "secondary" : "default"}
                       onClick={() => onAddBook(book)}
                       disabled={isAdded}
-                      className="shrink-0"
+                      className="shrink-0 ml-2"
                     >
                       {isAdded ? (
                         "Added"

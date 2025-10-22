@@ -33,7 +33,11 @@ export function EditBookDialog({ book, open, onOpenChange, onSave }: EditBookDia
   };
 
   const handleChange = (field: keyof Book, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    if (field === 'subjects') {
+      setFormData(prev => ({ ...prev, [field]: value.split(',').map(s => s.trim()).filter(s => s.length > 0) }));
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
   };
 
   return (
