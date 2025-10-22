@@ -45,10 +45,19 @@ export function SearchResults({ books, onAddBook, existingBookIds }: SearchResul
                     </div>
                     <Button
                       size="sm"
+                      variant={isAdded ? "secondary" : "default"}
                       onClick={() => onAddBook(book)}
                       disabled={isAdded}
+                      className="shrink-0"
                     >
-                      {isAdded ? "Added" : <><Plus className="w-4 h-4 mr-1" /> Add</>}
+                      {isAdded ? (
+                        "Added"
+                      ) : (
+                        <>
+                          <Plus className="w-4 h-4 mr-1" />
+                          Add
+                        </>
+                      )}
                     </Button>
                   </div>
                 </Card>
