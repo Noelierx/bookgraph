@@ -2,7 +2,8 @@ import { Book } from "@/types/book";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { X, Edit, ExternalLink } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { X, Edit, ExternalLink, AlertCircle } from "lucide-react";
 
 interface BookDetailsProps {
   book: Book;
@@ -64,6 +65,15 @@ export function BookDetails({ book, onClose, onEdit, onRemove }: BookDetailsProp
               <div className="text-sm text-muted-foreground">Description:</div>
               <p className="text-sm leading-relaxed">{book.description}</p>
             </div>
+          )}
+          
+          {!book.description && (
+            <Alert variant="default" className="border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20">
+              <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-500" />
+              <AlertDescription className="text-yellow-700 dark:text-yellow-400">
+                No description available. Add one to help discover connections with other books!
+              </AlertDescription>
+            </Alert>
           )}
         </div>
         
