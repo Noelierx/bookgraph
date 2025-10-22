@@ -13,6 +13,13 @@ Search, collect, analyze, and visualize how your favorite reads relate to one an
 - 🧠 **Automatic enrichment**: fetches descriptions, subjects, and ISBNs (preferring ISBN-13).  
 - ✅ **Validation**: ISBN required for manual additions.  
 - 🕸️ **Interactive graph** powered by *ForceGraph2D* — fully responsive with drag / zoom / pan.  
+- 🎨 **Color-coded relationships** — visualize different connection types at a glance:
+  - 🟣 **Similar Themes** — books sharing thematic elements
+  - 🔵 **Similar Plots** — books with comparable plot structures
+  - 🔴 **Similar Concepts** — books discussing related concepts
+  - 🟢 **Common Subjects** — books with overlapping subject categories
+  - 🟠 **Contrasting Ideas** — books exploring opposing concepts (light/dark, good/evil, etc.)
+  - 🟣 **Mixed** — multiple relationship types combined
 - 📖 **Book details** with ISBN, subjects, and description — includes *Edit* / *Delete*.  
 - 💾 **Import / Export** your collection as JSON.  
 - 💡 **Help modal** with tips for improving connections.  
@@ -53,6 +60,8 @@ npm run dev
 - **ISBN handling**: cleans multiple identifier fields (`isbn`, `isbn_10`, `isbn_13`, `identifiers`); prefers ISBN-13 and converts from ISBN-10 if needed.  
 - **Data enrichment**: merges complementary data from editions/works to fill missing metadata.  
 - **Graph resizing**: dynamically fits its container using `ResizeObserver`.
+- **Relationship detection**: analyzes book descriptions and subjects to identify thematic similarities, plot parallels, and contrasting concepts.
+- **Visual legend**: color-coded legend in the graph displays relationship types for easy interpretation.
 
 ---
 
@@ -60,11 +69,12 @@ npm run dev
 
 | Component | Purpose |
 |------------|----------|
-| `BookGraph.tsx` | Responsive ForceGraph2D visualization |
+| `BookGraph.tsx` | Responsive ForceGraph2D visualization with color-coded relationships |
 | `HelpModal.tsx` | Reusable modal with improvement tips |
 | `EditBookDialog.tsx` | Add/edit dialog with ISBN validation |
 | `BookDetails.tsx` | Displays ISBN, subjects, and description |
 | `openLibraryService.ts` | Data enrichment, ISBN normalization, description retrieval |
+| `connectionService.ts` | Analyzes books to detect relationships and classify connection types |
 | `Index.tsx` | Main page – import/export, state management, layout |
 
 ---
