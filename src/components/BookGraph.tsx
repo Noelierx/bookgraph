@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useLayoutEffect } from "react";
 import ForceGraph2D from "react-force-graph-2d";
 import { GraphData } from "@/types/book";
 
@@ -9,23 +9,57 @@ interface BookGraphProps {
   height?: number;
 }
 
-export function BookGraph({ data, onNodeClick, width = 800, height = 600 }: BookGraphProps) {
+export function BookGraph({ data, onNodeClick, width, height }: BookGraphProps) {
   const fgRef = useRef<any>();
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const [size, setSize] = useState<{ w: number; h: number }>({
+    w: width ?? 800,
+    h: height ?? 600,
+  });
 
+  // update forces when graphRef is ready or data changes
   useEffect(() => {
     if (fgRef.current) {
       fgRef.current.d3Force("charge").strength(-400);
       fgRef.current.d3Force("link").distance(100);
     }
-  }, []);
+  }, [data]);
+
+  // measure container and keep ForceGraph sized to fill it
+  useLayoutEffect(() => {
+    const el = wrapperRef.current;
+    if (!el) return;
+
+    const update = () => {
+      const rect = el.getBoundingClientRect();
+      setSize({
+        w: width ?? Math.max(300, Math.floor(rect.width)),
+        h: height ?? Math.max(300, Math.floor(rect.height)),
+      });
+    };
+
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    window.addEventListener("resize", update);
+
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", update);
+    };
+  }, [width, height]);
 
   return (
-    <div className="relative w-full h-full bg-background/50 rounded-lg overflow-hidden border border-border">
+    <div
+      ref={wrapperRef}
+      className="relative w-full h-full min-h-[400px] bg-background/50 rounded-lg overflow-hidden border border-border"
+      style={{ touchAction: "manipulation" }} // améliorer l'interaction mobile
+    >
       <ForceGraph2D
         ref={fgRef}
         graphData={data}
-        width={width}
-        height={height}
+        width={size.w}
+        height={size.h}
         backgroundColor="transparent"
         nodeLabel={(node: any) => node.name}
         nodeColor={(node: any) => {

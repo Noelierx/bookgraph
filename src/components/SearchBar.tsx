@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search } from "lucide-react";
+import { Search, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -7,9 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 interface SearchBarProps {
   onSearch: (query: string, type: "title" | "author" | "isbn") => void;
   isLoading?: boolean;
+  onClear?: () => void;
 }
 
-export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
+export function SearchBar({ onSearch, isLoading, onClear }: SearchBarProps) {
   const [query, setQuery] = useState("");
   const [searchType, setSearchType] = useState<"title" | "author" | "isbn">("title");
 
@@ -41,10 +42,18 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
         className="flex-1"
       />
       
-      <Button type="submit" disabled={isLoading || !query.trim()}>
-        <Search className="w-4 h-4 mr-2" />
-        Search
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button type="submit" disabled={isLoading || !query.trim()}>
+          <Search className="w-4 h-4 mr-2" />
+          Search
+        </Button>
+        {query.trim() !== "" && (
+          <Button type="button" variant="ghost" onClick={() => { setQuery(""); onClear?.(); }}>
+            <Plus className="hidden" />{/* keep icon import stable if needed */}
+            Clear
+          </Button>
+        )}
+      </div>
     </form>
   );
 }

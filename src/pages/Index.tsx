@@ -7,7 +7,8 @@ import { SearchResults } from "@/components/SearchResults";
 import { EditBookDialog } from "@/components/EditBookDialog";
 import { BooksList } from "@/components/BooksList";
 import { Button } from "@/components/ui/button";
-import { Plus, Library, RefreshCw, Download, Upload } from "lucide-react";
+import { Plus, Library, RefreshCw, Download, Upload, Info } from "lucide-react";
+import HelpModal from "@/components/HelpModal";
 import { searchBooks } from "@/services/openLibraryService";
 import { analyzeBookConnections } from "@/services/connectionService";
 import { exportBooksToJSON, importBooksFromJSON } from "@/services/importExportService";
@@ -25,6 +26,7 @@ const Index = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -197,16 +199,18 @@ const Index = () => {
                 <p className="text-sm text-muted-foreground">Discover hidden connections in your reading</p>
               </div>
             </div>
-            
+          </div>
+
+          <div className="flex items-center justify-start mb-4">
             <div className="flex gap-2">
-              <Button variant="outline" onClick={handleExport} disabled={books.length === 0}>
-                <Download className="w-4 h-4 mr-2" />
-                Export
+              <Button variant="outline" onClick={handleExport} disabled={books.length === 0} aria-label="Export">
+                <Download className="w-4 h-4" aria-hidden="true" />
+                <span className="hidden sm:inline ml-2">Export</span>
               </Button>
-              <Button variant="outline" asChild>
-                <label className="cursor-pointer">
-                  <Upload className="w-4 h-4 mr-2" />
-                  Import
+              <Button variant="outline" asChild aria-label="Import">
+                <label className="cursor-pointer flex items-center">
+                  <Upload className="w-4 h-4" aria-hidden="true" />
+                  <span className="hidden sm:inline ml-2">Import</span>
                   <input
                     type="file"
                     accept=".json"
@@ -215,18 +219,28 @@ const Index = () => {
                   />
                 </label>
               </Button>
-              <Button variant="outline" onClick={handleAnalyzeConnections} disabled={isAnalyzing || books.length < 2}>
-                <RefreshCw className={`w-4 h-4 mr-2 ${isAnalyzing ? "animate-spin" : ""}`} />
-                Analyze
+              <Button variant="outline" onClick={handleAnalyzeConnections} disabled={isAnalyzing || books.length < 2} aria-label="Analyze">
+                <RefreshCw className={`w-4 h-4 ${isAnalyzing ? "animate-spin" : ""}`} aria-hidden="true" />
+                <span className="hidden sm:inline ml-2">Analyze</span>
               </Button>
-              <Button onClick={handleAddCustomBook}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Book
+              <Button variant="ghost" onClick={() => setShowHelpModal(true)} aria-label="Help">
+                <Info className="w-4 h-4" aria-hidden="true" />
+                <span className="hidden sm:inline ml-2">Help</span>
               </Button>
             </div>
           </div>
-          
-          <SearchBar onSearch={handleSearch} isLoading={isSearching} />
+
+          <div className="flex items-center justify-between gap-3">
+            <SearchBar
+              onSearch={handleSearch}
+              isLoading={isSearching}
+              onClear={() => setSearchResults([])}
+            />
+            <Button onClick={handleAddCustomBook} aria-label="Add Book manually" className="ml-2">
+              <Plus className="w-4 h-4" aria-hidden="true" />
+              <span className="hidden sm:inline ml-2">Add Book manually</span>
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -297,6 +311,8 @@ const Index = () => {
         onOpenChange={setShowEditDialog}
         onSave={handleSaveBook}
       />
+
+      <HelpModal open={showHelpModal} onClose={() => setShowHelpModal(false)} />
     </div>
   );
 };

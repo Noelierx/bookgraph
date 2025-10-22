@@ -40,7 +40,7 @@ export function SearchResults({ books, onAddBook, existingBookIds }: SearchResul
                     )}
                     <div className="flex-1 min-w-[120px]">
                       <h3 className="font-semibold">{truncateTitle(book.title)}</h3>
-                      <p className="text-sm text-muted-foreground truncate">{book.author}</p>
+                      <p className="text-sm text-muted-foreground">{truncateTitle(book.author)}</p>
                       {book.publishYear && (
                         <p className="text-xs text-muted-foreground mt-1">{book.publishYear}</p>
                       )}
