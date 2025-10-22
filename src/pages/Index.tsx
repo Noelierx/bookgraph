@@ -6,9 +6,10 @@ import { BookDetails } from "@/components/BookDetails";
 import { SearchResults } from "@/components/SearchResults";
 import { EditBookDialog } from "@/components/EditBookDialog";
 import { Button } from "@/components/ui/button";
-import { Plus, Library, RefreshCw } from "lucide-react";
+import { Plus, Library, RefreshCw, Download, Upload } from "lucide-react";
 import { searchBooks } from "@/services/openLibraryService";
 import { analyzeBookConnections } from "@/services/connectionService";
+import { exportBooksToJSON, importBooksFromJSON } from "@/services/importExportService";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -119,6 +120,47 @@ const Index = () => {
     }
   };
 
+  const handleExport = () => {
+    if (books.length === 0) {
+      toast.info("No books to export");
+      return;
+    }
+    
+    try {
+      exportBooksToJSON(books);
+      toast.success(`Exported ${books.length} books`);
+    } catch (error) {
+      toast.error("Failed to export books");
+      console.error(error);
+    }
+  };
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    try {
+      const importedBooks = await importBooksFromJSON(file);
+      
+      // Merge with existing books, avoiding duplicates
+      const existingIds = new Set(books.map(b => b.id));
+      const newBooks = importedBooks.filter(b => !existingIds.has(b.id));
+      
+      if (newBooks.length === 0) {
+        toast.info("All books from import already exist in your collection");
+      } else {
+        setBooks([...books, ...newBooks]);
+        toast.success(`Imported ${newBooks.length} new books`);
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to import books");
+      console.error(error);
+    }
+    
+    // Reset file input
+    event.target.value = "";
+  };
+
   const graphData: GraphData = useMemo(() => {
     return {
       nodes: books.map(book => ({
@@ -162,6 +204,22 @@ const Index = () => {
             </div>
             
             <div className="flex gap-2">
+              <Button variant="outline" onClick={handleExport} disabled={books.length === 0}>
+                <Download className="w-4 h-4 mr-2" />
+                Export
+              </Button>
+              <Button variant="outline" asChild>
+                <label className="cursor-pointer">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Import
+                  <input
+                    type="file"
+                    accept=".json"
+                    className="hidden"
+                    onChange={handleImport}
+                  />
+                </label>
+              </Button>
               <Button variant="outline" onClick={handleAnalyzeConnections} disabled={isAnalyzing || books.length < 2}>
                 <RefreshCw className={`w-4 h-4 mr-2 ${isAnalyzing ? "animate-spin" : ""}`} />
                 Analyze
