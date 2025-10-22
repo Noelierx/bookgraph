@@ -33,32 +33,45 @@ export function BookGraph({ data, onNodeClick, width = 800, height = 600 }: Book
           return index % 2 === 0 ? "hsl(270, 80%, 65%)" : "hsl(190, 80%, 55%)";
         }}
         nodeRelSize={8}
+        // Custom drawing for nodes — use save/restore and keep pointer hit area in sync
         nodeCanvasObject={(node: any, ctx, globalScale) => {
           const label = node.name;
           const fontSize = 12 / globalScale;
-          ctx.font = `${fontSize}px Inter, sans-serif`;
-          
-          // Draw node circle
-          const nodeColor = data.nodes.findIndex(n => n.id === node.id) % 2 === 0 
-            ? "hsl(270, 80%, 65%)" 
+          const radius = 8;
+          const nodeColor = data.nodes.findIndex(n => n.id === node.id) % 2 === 0
+            ? "hsl(270, 80%, 65%)"
             : "hsl(190, 80%, 55%)";
-          
+
+          ctx.save();
           ctx.beginPath();
-          ctx.arc(node.x, node.y, 8, 0, 2 * Math.PI);
+          ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI);
           ctx.fillStyle = nodeColor;
-          ctx.fill();
-          
-          // Add glow effect
+          // glow
           ctx.shadowBlur = 15;
           ctx.shadowColor = nodeColor;
           ctx.fill();
           ctx.shadowBlur = 0;
-          
-          // Draw label
+
+          // label
+          ctx.font = `${fontSize}px Inter, sans-serif`;
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillStyle = "hsl(220, 15%, 95%)";
           ctx.fillText(label, node.x, node.y + 15);
+          ctx.restore();
+        }}
+        // Ensure pointer events align with our custom canvas drawing:
+        nodePointerAreaPaint={(node: any, color: string, ctx: CanvasRenderingContext2D) => {
+          const radius = 8;
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI);
+          ctx.fill();
+        }}
+        // change cursor on hover for discoverability
+        onNodeHover={(node: any | null) => {
+          if (node) document.body.style.cursor = "pointer";
+          else document.body.style.cursor = "default";
         }}
         linkColor={(link: any) => {
           const strength = link.strength || 0.5;

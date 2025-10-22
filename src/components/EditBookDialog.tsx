@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Book } from "@/types/book";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,22 @@ export function EditBookDialog({ book, open, onOpenChange, onSave }: EditBookDia
       subjects: [],
     }
   );
+  
+  useEffect(() => {
+    if (book) {
+      setFormData(book);
+    } else {
+      setFormData({
+        id: `custom-${Date.now()}`,
+        title: "",
+        author: "",
+        description: "",
+        isbn: "",
+        publishYear: "",
+        subjects: [],
+      });
+    }
+  }, [book, open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

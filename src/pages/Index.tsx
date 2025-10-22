@@ -5,6 +5,7 @@ import { BookGraph } from "@/components/BookGraph";
 import { BookDetails } from "@/components/BookDetails";
 import { SearchResults } from "@/components/SearchResults";
 import { EditBookDialog } from "@/components/EditBookDialog";
+import { BooksList } from "@/components/BooksList";
 import { Button } from "@/components/ui/button";
 import { Plus, Library, RefreshCw, Download, Upload } from "lucide-react";
 import { searchBooks } from "@/services/openLibraryService";
@@ -26,7 +27,6 @@ const Index = () => {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const isMobile = useIsMobile();
 
-  // Load books from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
@@ -40,7 +40,6 @@ const Index = () => {
     }
   }, []);
 
-  // Save books to localStorage whenever they change
   useEffect(() => {
     if (books.length > 0) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
@@ -141,8 +140,6 @@ const Index = () => {
     
     try {
       const importedBooks = await importBooksFromJSON(file);
-      
-      // Merge with existing books, avoiding duplicates
       const existingIds = new Set(books.map(b => b.id));
       const newBooks = importedBooks.filter(b => !existingIds.has(b.id));
       
@@ -157,7 +154,6 @@ const Index = () => {
       console.error(error);
     }
     
-    // Reset file input
     event.target.value = "";
   };
 
@@ -189,7 +185,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-4">
@@ -235,10 +230,8 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Graph Visualization */}
           <div className="lg:col-span-2">
             {books.length === 0 ? (
               <div className="flex items-center justify-center h-[600px] bg-card/50 rounded-lg border border-border">
@@ -267,8 +260,6 @@ const Index = () => {
               </div>
             )}
           </div>
-
-          {/* Sidebar */}
           <div className="space-y-6">
             {selectedBook && (
               <BookDetails
@@ -277,6 +268,17 @@ const Index = () => {
                 onEdit={handleEditBook}
                 onRemove={handleRemoveBook}
               />
+            )}
+            {books.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium mb-2">All books</h3>
+                <BooksList
+                  books={books}
+                  onSelect={(id) => setSelectedBookId(id)}
+                  onEdit={handleEditBook}
+                  onRemove={handleRemoveBook}
+                />
+              </div>
             )}
             
             {searchResults.length > 0 && (
@@ -289,8 +291,6 @@ const Index = () => {
           </div>
         </div>
       </main>
-
-      {/* Edit Dialog */}
       <EditBookDialog
         book={editingBook}
         open={showEditDialog}

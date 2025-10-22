@@ -11,6 +11,8 @@ interface SearchResultsProps {
 }
 
 export function SearchResults({ books, onAddBook, existingBookIds }: SearchResultsProps) {
+  const truncateTitle = (t: string) => (t && t.length > 20 ? t.slice(0, 20) + "..." : t);
+
   if (books.length === 0) {
     return null;
   }
@@ -27,8 +29,8 @@ export function SearchResults({ books, onAddBook, existingBookIds }: SearchResul
             {books.map((book) => {
               const isAdded = existingBookIds.has(book.id);
               return (
-                <Card key={book.id} className="overflow-hidden">
-                  <div className="flex gap-4 p-4 overflow-x-auto">
+                <Card key={book.id}>
+                  <div className="flex gap-4 p-4">
                     {book.coverUrl && (
                       <img 
                         src={book.coverUrl} 
@@ -37,7 +39,7 @@ export function SearchResults({ books, onAddBook, existingBookIds }: SearchResul
                       />
                     )}
                     <div className="flex-1 min-w-[120px]">
-                      <h3 className="font-semibold truncate">{book.title}</h3>
+                      <h3 className="font-semibold">{truncateTitle(book.title)}</h3>
                       <p className="text-sm text-muted-foreground truncate">{book.author}</p>
                       {book.publishYear && (
                         <p className="text-xs text-muted-foreground mt-1">{book.publishYear}</p>

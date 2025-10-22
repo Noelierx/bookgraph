@@ -2,8 +2,15 @@ import { Book, BookConnection } from "@/types/book";
 
 export async function analyzeBookConnections(books: Book[]): Promise<BookConnection[]> {
   const connections: BookConnection[] = [];
-  
-  // Analyze connections based on descriptions, subjects, and themes
+
+  const extracts = books.map(b => {
+    const text = b.description || "";
+    const keywords = extractKeywords(text);
+    const themes = extractThemes(text);
+    const plots = extractPlotElements(text);
+    return { id: b.id, keywords, themes, plots };
+  });
+
   for (let i = 0; i < books.length; i++) {
     for (let j = i + 1; j < books.length; j++) {
       const book1 = books[i];
@@ -12,54 +19,42 @@ export async function analyzeBookConnections(books: Book[]): Promise<BookConnect
       let strength = 0;
       const reasons: string[] = [];
       
-      // Check for common subjects (high weight)
-      if (book1.subjects && book2.subjects && book1.subjects.length > 0 && book2.subjects.length > 0) {
-        const commonSubjects = book1.subjects.filter(s => 
-          book2.subjects?.some(s2 => s.toLowerCase() === s2.toLowerCase())
-        );
-        if (commonSubjects.length > 0) {
-          strength += Math.min(commonSubjects.length * 0.3, 0.7);
-          reasons.push(`Common subjects: ${commonSubjects.slice(0, 3).join(", ")}`);
-        }
-      }
-      
-      // Analyze descriptions if both books have them
-      if (book1.description && book2.description) {
-        // Extract keywords and themes from descriptions
-        const keywords1 = extractKeywords(book1.description);
-        const keywords2 = extractKeywords(book2.description);
-        const themes1 = extractThemes(book1.description);
-        const themes2 = extractThemes(book2.description);
-        const plots1 = extractPlotElements(book1.description);
-        const plots2 = extractPlotElements(book2.description);
-        
-        // Find common elements
-        const commonKeywords = keywords1.filter(k => keywords2.includes(k));
-        const commonThemes = themes1.filter(t => themes2.includes(t));
-        const commonPlots = plots1.filter(p => plots2.includes(p));
-        
-        // Keywords give moderate weight
+let commonSubjects: string[] = [];
+if (book1.subjects && book2.subjects && book1.subjects.length > 0 && book2.subjects.length > 0) {
+  commonSubjects = book1.subjects.filter(s => 
+    book2.subjects?.some(s2 => s.toLowerCase() === s2.toLowerCase())
+  );
+  if (commonSubjects.length > 0) {
+    strength += Math.min(commonSubjects.length * 0.3, 0.7);
+    reasons.push(`Common subjects: ${commonSubjects.slice(0, 3).join(", ")}`);
+  }
+}
+
+const e1 = extracts.find(x => x.id === book1.id) || { keywords: [], themes: [], plots: [] };
+const e2 = extracts.find(x => x.id === book2.id) || { keywords: [], themes: [], plots: [] };
+const commonKeywords = e1.keywords.filter(k => e2.keywords.includes(k));
+const commonThemes = e1.themes.filter(t => e2.themes.includes(t));
+const commonPlots = e1.plots.filter(p => e2.plots.includes(p));
+
+console.log(`[analyze.compare] ${book1.id}("${book1.title}") <> ${book2.id}("${book2.title}")`);
+console.log(`[analyze.compare] commonSubjects=${JSON.stringify(commonSubjects || [])} commonKeywords=${JSON.stringify(commonKeywords)} commonThemes=${JSON.stringify(commonThemes)} commonPlots=${JSON.stringify(commonPlots)}`);
+
+if (book1.description && book2.description) {
         if (commonKeywords.length > 0) {
           strength += Math.min(commonKeywords.length * 0.12, 0.5);
           if (commonKeywords.length >= 2) {
             reasons.push(`Similar concepts: ${commonKeywords.slice(0, 3).join(", ")}`);
           }
         }
-        
-        // Themes give higher weight
         if (commonThemes.length > 0) {
           strength += Math.min(commonThemes.length * 0.25, 0.6);
           reasons.push(`Common themes: ${commonThemes.slice(0, 2).join(", ")}`);
         }
-        
-        // Plot elements give significant weight
         if (commonPlots.length > 0) {
           strength += Math.min(commonPlots.length * 0.2, 0.5);
           reasons.push(`Similar plot elements: ${commonPlots.slice(0, 2).join(", ")}`);
         }
       }
-      
-      // Add connection if there's any meaningful overlap
       if (strength > 0.1 && reasons.length > 0) {
         connections.push({
           source: book1.id,
@@ -75,7 +70,6 @@ export async function analyzeBookConnections(books: Book[]): Promise<BookConnect
 }
 
 function extractKeywords(text: string): string[] {
-  // Enhanced keyword extraction with better filtering
   const commonWords = new Set([
     "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", 
     "by", "from", "as", "is", "was", "are", "were", "been", "be", "have", "has", "had",
@@ -93,13 +87,11 @@ function extractKeywords(text: string): string[] {
     .split(/\s+/)
     .filter(word => word.length > 3 && !commonWords.has(word));
   
-  // Count word frequency
   const frequency = new Map<string, number>();
   words.forEach(word => {
     frequency.set(word, (frequency.get(word) || 0) + 1);
   });
   
-  // Return most frequent meaningful words
   return Array.from(frequency.entries())
     .sort((a, b) => b[1] - a[1])
     .slice(0, 30)
@@ -107,9 +99,7 @@ function extractKeywords(text: string): string[] {
 }
 
 function extractThemes(text: string): string[] {
-  // Extract thematic elements from text
   const themePatterns = [
-    // Common narrative themes
     /\b(love|romance|relationship|family|friendship|loyalty|betrayal)\b/gi,
     /\b(war|battle|conflict|fight|struggle|violence|peace)\b/gi,
     /\b(mystery|detective|crime|murder|investigation|thriller)\b/gi,
@@ -138,19 +128,15 @@ function extractThemes(text: string): string[] {
 }
 
 function extractPlotElements(text: string): string[] {
-  // Extract plot-related elements from text
   const plotPatterns = [
-    // Story structure
     /\b(journey|quest|mission|adventure|voyage|expedition)\b/gi,
     /\b(discovery|revelation|secret|mystery|truth)\b/gi,
     /\b(conflict|struggle|fight|battle|war|confrontation)\b/gi,
     /\b(escape|rescue|save|protect|defend)\b/gi,
     /\b(revenge|betrayal|deception|conspiracy|plot)\b/gi,
-    // Character arcs
     /\b(transformation|change|growth|development|evolution)\b/gi,
     /\b(sacrifice|loss|redemption|forgiveness)\b/gi,
     /\b(romance|love|relationship|marriage|affair)\b/gi,
-    // Settings and scenarios
     /\b(investigation|detective|crime|murder|mystery)\b/gi,
     /\b(survival|danger|threat|peril|risk)\b/gi,
     /\b(power|throne|kingdom|empire|rule|reign)\b/gi,
