@@ -3,52 +3,31 @@ import { Book, BookConnection } from "@/types/book";
 export async function analyzeBookConnections(books: Book[]): Promise<BookConnection[]> {
   const connections: BookConnection[] = [];
   
-  // Simple local analysis based on shared subjects and themes
+  // Analyze connections based only on book descriptions
   for (let i = 0; i < books.length; i++) {
     for (let j = i + 1; j < books.length; j++) {
       const book1 = books[i];
       const book2 = books[j];
       
-      // Check for shared subjects
-      const sharedSubjects = book1.subjects?.filter(s => 
-        book2.subjects?.some(s2 => s2.toLowerCase() === s.toLowerCase())
-      ) || [];
-      
-      // Check for same author
-      const sameAuthor = book1.author.toLowerCase() === book2.author.toLowerCase();
-      
-      // Calculate connection strength
-      let strength = 0;
-      let reasons: string[] = [];
-      
-      if (sameAuthor) {
-        strength += 0.8;
-        reasons.push("Same author");
+      // Only analyze if both books have descriptions
+      if (!book1.description || !book2.description) {
+        continue;
       }
       
-      if (sharedSubjects.length > 0) {
-        strength += Math.min(sharedSubjects.length * 0.2, 0.6);
-        reasons.push(`Shared topics: ${sharedSubjects.slice(0, 2).join(", ")}`);
-      }
+      const keywords1 = extractKeywords(book1.description);
+      const keywords2 = extractKeywords(book2.description);
+      const commonKeywords = keywords1.filter(k => keywords2.includes(k));
       
-      // Check for keywords in descriptions
-      if (book1.description && book2.description) {
-        const keywords1 = extractKeywords(book1.description);
-        const keywords2 = extractKeywords(book2.description);
-        const commonKeywords = keywords1.filter(k => keywords2.includes(k));
+      // Calculate connection strength based on shared themes
+      if (commonKeywords.length > 2) {
+        const strength = Math.min(commonKeywords.length * 0.15, 1);
+        const topKeywords = commonKeywords.slice(0, 3);
         
-        if (commonKeywords.length > 2) {
-          strength += Math.min(commonKeywords.length * 0.1, 0.4);
-          reasons.push("Similar themes");
-        }
-      }
-      
-      if (strength > 0.3) {
         connections.push({
           source: book1.id,
           target: book2.id,
-          strength: Math.min(strength, 1),
-          reason: reasons.join(" • "),
+          strength,
+          reason: `Common themes: ${topKeywords.join(", ")}`,
         });
       }
     }
