@@ -7,7 +7,7 @@ import { SearchResults } from "@/components/SearchResults";
 import { EditBookDialog } from "@/components/EditBookDialog";
 import { BooksList } from "@/components/BooksList";
 import { Button } from "@/components/ui/button";
-import { Plus, Library, RefreshCw, Download, Upload, Info } from "lucide-react";
+import { Plus, BookOpen, RefreshCw, Download, Upload, Info } from "lucide-react";
 import HelpModal from "@/components/HelpModal";
 import { searchBooks } from "@/services/openLibraryService";
 import { analyzeBookConnections } from "@/services/connectionService";
@@ -192,7 +192,7 @@ const Index = () => {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-gradient-primary flex items-center justify-center shadow-glow-primary">
-                <Library className="w-6 h-6 text-primary-foreground" />
+                <BookOpen className="w-6 h-6 text-primary-foreground" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold">BookGraph</h1>
@@ -251,7 +251,7 @@ const Index = () => {
               <div className="flex items-center justify-center h-[600px] bg-card/50 rounded-lg border border-border">
                 <div className="text-center space-y-4 max-w-md px-4">
                   <div className="w-16 h-16 mx-auto rounded-full bg-gradient-primary flex items-center justify-center shadow-glow-primary">
-                    <Library className="w-8 h-8 text-primary-foreground" />
+                    <BookOpen className="w-8 h-8 text-primary-foreground" />
                   </div>
                   <h2 className="text-2xl font-semibold">Start Your Book Journey</h2>
                   <p className="text-muted-foreground">
