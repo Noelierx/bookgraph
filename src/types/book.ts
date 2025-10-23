@@ -9,11 +9,19 @@ export interface Book {
   subjects?: string[];
 }
 
+export type RelationshipType = 
+  | "similar-themes"
+  | "similar-plots"
+  | "similar-concepts"
+  | "common-subjects"
+  | "mixed";
+
 export interface BookConnection {
   source: string;
   target: string;
   strength: number;
   reason: string;
+  type?: RelationshipType;
 }
 
 export interface GraphData {
@@ -27,5 +35,6 @@ export interface GraphData {
     target: string;
     strength: number;
     reason: string;
+    type?: RelationshipType;
   }>;
 }

@@ -1,4 +1,4 @@
-import { Book, BookConnection } from "@/types/book";
+import { Book, BookConnection, RelationshipType } from "@/types/book";
 
 export async function analyzeBookConnections(books: Book[]): Promise<BookConnection[]> {
   const connections: BookConnection[] = [];
@@ -18,6 +18,7 @@ export async function analyzeBookConnections(books: Book[]): Promise<BookConnect
       
       let strength = 0;
       const reasons: string[] = [];
+      const types: RelationshipType[] = [];
       
 let commonSubjects: string[] = [];
 if (book1.subjects && book2.subjects && book1.subjects.length > 0 && book2.subjects.length > 0) {
@@ -27,6 +28,7 @@ if (book1.subjects && book2.subjects && book1.subjects.length > 0 && book2.subje
   if (commonSubjects.length > 0) {
     strength += Math.min(commonSubjects.length * 0.3, 0.7);
     reasons.push(`Common subjects: ${commonSubjects.slice(0, 3).join(", ")}`);
+    types.push("common-subjects");
   }
 }
 
@@ -44,23 +46,28 @@ if (book1.description && book2.description) {
           strength += Math.min(commonKeywords.length * 0.12, 0.5);
           if (commonKeywords.length >= 2) {
             reasons.push(`Similar concepts: ${commonKeywords.slice(0, 3).join(", ")}`);
+            types.push("similar-concepts");
           }
         }
         if (commonThemes.length > 0) {
           strength += Math.min(commonThemes.length * 0.25, 0.6);
           reasons.push(`Common themes: ${commonThemes.slice(0, 2).join(", ")}`);
+          types.push("similar-themes");
         }
         if (commonPlots.length > 0) {
           strength += Math.min(commonPlots.length * 0.2, 0.5);
           reasons.push(`Similar plot elements: ${commonPlots.slice(0, 2).join(", ")}`);
+          types.push("similar-plots");
         }
       }
       if (strength > 0.1 && reasons.length > 0) {
+        const connectionType: RelationshipType = types.length === 1 ? types[0] : "mixed";
         connections.push({
           source: book1.id,
           target: book2.id,
           strength: Math.min(strength, 1),
           reason: reasons.join(" • "),
+          type: connectionType,
         });
       }
     }
