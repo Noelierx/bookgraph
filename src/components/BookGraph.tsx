@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useLayoutEffect } from "react";
 import ForceGraph2D from "react-force-graph-2d";
-import { GraphData } from "@/types/book";
+import { GraphData, RelationshipType } from "@/types/book";
 
 interface BookGraphProps {
   data: GraphData;
@@ -8,6 +8,23 @@ interface BookGraphProps {
   width?: number;
   height?: number;
 }
+
+// Color mapping for different relationship types
+const RELATIONSHIP_COLORS = {
+  "similar-themes": "hsl(270, 80%, 65%)",      // Purple
+  "similar-plots": "hsl(30, 90%, 60%)",        // Orange
+  "similar-concepts": "hsl(190, 80%, 55%)",    // Cyan
+  "common-subjects": "hsl(140, 70%, 50%)",     // Green
+  "mixed": "hsl(220, 70%, 60%)",               // Blue
+};
+
+const RELATIONSHIP_LABELS = {
+  "similar-themes": "Similar Themes",
+  "similar-plots": "Similar Plots",
+  "similar-concepts": "Similar Concepts",
+  "common-subjects": "Common Subjects",
+  "mixed": "Mixed Relationships",
+};
 
 export function BookGraph({ data, onNodeClick, width, height }: BookGraphProps) {
   const fgRef = useRef<any>();
@@ -22,6 +39,12 @@ export function BookGraph({ data, onNodeClick, width, height }: BookGraphProps) 
     if (fgRef.current) {
       fgRef.current.d3Force("charge").strength(-400);
       fgRef.current.d3Force("link").distance(100);
+      
+      // Add collision force to prevent nodes from overlapping
+      const collisionForce = fgRef.current.d3Force("collide");
+      if (collisionForce) {
+        collisionForce.radius(20).strength(0.8);
+      }
     }
   }, [data]);
 
@@ -108,10 +131,8 @@ export function BookGraph({ data, onNodeClick, width, height }: BookGraphProps) 
           else document.body.style.cursor = "default";
         }}
         linkColor={(link: any) => {
-          const strength = link.strength || 0.5;
-          return strength > 0.7 
-            ? "hsl(270, 80%, 65%)" 
-            : "hsl(270, 40%, 45%)";
+          const type = link.type as RelationshipType | undefined;
+          return type ? RELATIONSHIP_COLORS[type] : RELATIONSHIP_COLORS["mixed"];
         }}
         linkWidth={(link: any) => {
           const strength = link.strength || 0.5;
@@ -131,6 +152,21 @@ export function BookGraph({ data, onNodeClick, width, height }: BookGraphProps) 
       
       <div className="absolute bottom-4 left-4 text-xs text-muted-foreground bg-card/80 backdrop-blur-sm px-3 py-2 rounded-md border border-border">
         Drag nodes • Scroll to zoom • Click for details
+      </div>
+      
+      <div className="absolute top-4 right-4 bg-card/90 backdrop-blur-sm px-3 py-2 rounded-md border border-border shadow-lg">
+        <div className="text-xs font-semibold mb-2 text-foreground">Relationship Types</div>
+        <div className="space-y-1">
+          {Object.entries(RELATIONSHIP_LABELS).map(([type, label]) => (
+            <div key={type} className="flex items-center gap-2 text-xs">
+              <div 
+                className="w-3 h-0.5 rounded-full" 
+                style={{ backgroundColor: RELATIONSHIP_COLORS[type as RelationshipType] }}
+              />
+              <span className="text-muted-foreground">{label}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
