@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useLayoutEffect } from "react";
+import { useEffect, useRef, useState, useLayoutEffect, useMemo } from "react";
 import ForceGraph2D from "react-force-graph-2d";
 import { GraphData, RelationshipType } from "@/types/book";
 
@@ -33,6 +33,35 @@ export function BookGraph({ data, onNodeClick, width, height }: BookGraphProps) 
     w: width ?? 800,
     h: height ?? 600,
   });
+  
+  // State to track which relationship types are visible (all enabled by default)
+  const [visibleTypes, setVisibleTypes] = useState<Set<RelationshipType>>(
+    new Set(["similar-themes", "similar-plots", "similar-concepts", "common-subjects", "mixed"])
+  );
+  
+  // Toggle a relationship type visibility
+  const toggleType = (type: RelationshipType) => {
+    setVisibleTypes((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(type)) {
+        newSet.delete(type);
+      } else {
+        newSet.add(type);
+      }
+      return newSet;
+    });
+  };
+  
+  // Filter the graph data based on visible types
+  const filteredData = useMemo(() => {
+    return {
+      nodes: data.nodes,
+      links: data.links.filter((link) => {
+        const type = link.type || "mixed";
+        return visibleTypes.has(type);
+      }),
+    };
+  }, [data, visibleTypes]);
 
   // update forces when graphRef is ready or data changes
   useEffect(() => {
@@ -46,7 +75,7 @@ export function BookGraph({ data, onNodeClick, width, height }: BookGraphProps) 
         collisionForce.radius(20).strength(0.8);
       }
     }
-  }, [data]);
+  }, [filteredData]);
 
   // measure container and keep ForceGraph sized to fill it
   useLayoutEffect(() => {
@@ -80,7 +109,7 @@ export function BookGraph({ data, onNodeClick, width, height }: BookGraphProps) 
     >
       <ForceGraph2D
         ref={fgRef}
-        graphData={data}
+        graphData={filteredData}
         width={size.w}
         height={size.h}
         backgroundColor="transparent"
@@ -156,16 +185,45 @@ export function BookGraph({ data, onNodeClick, width, height }: BookGraphProps) 
       
       <div className="absolute top-4 right-4 bg-card/90 backdrop-blur-sm px-3 py-2 rounded-md border border-border shadow-lg">
         <div className="text-xs font-semibold mb-2 text-foreground">Relationship Types</div>
+        <div className="text-[10px] text-muted-foreground/70 mb-2">Click to filter</div>
         <div className="space-y-1">
-          {Object.entries(RELATIONSHIP_LABELS).map(([type, label]) => (
-            <div key={type} className="flex items-center gap-2 text-xs">
+          {Object.entries(RELATIONSHIP_LABELS).map(([type, label]) => {
+            const isVisible = visibleTypes.has(type as RelationshipType);
+            return (
               <div 
-                className="w-3 h-0.5 rounded-full" 
-                style={{ backgroundColor: RELATIONSHIP_COLORS[type as RelationshipType] }}
-              />
-              <span className="text-muted-foreground">{label}</span>
-            </div>
-          ))}
+                key={type} 
+                className="flex items-center gap-2 text-xs cursor-pointer hover:bg-accent/50 rounded px-1 py-0.5 transition-colors"
+                onClick={() => toggleType(type as RelationshipType)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    toggleType(type as RelationshipType);
+                  }
+                }}
+                aria-label={`${isVisible ? 'Hide' : 'Show'} ${label}`}
+                aria-pressed={isVisible}
+              >
+                <div 
+                  className="w-3 h-0.5 rounded-full transition-opacity" 
+                  style={{ 
+                    backgroundColor: RELATIONSHIP_COLORS[type as RelationshipType],
+                    opacity: isVisible ? 1 : 0.3 
+                  }}
+                />
+                <span 
+                  className="transition-opacity"
+                  style={{ 
+                    opacity: isVisible ? 1 : 0.5,
+                    textDecoration: isVisible ? 'none' : 'line-through'
+                  }}
+                >
+                  {label}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
