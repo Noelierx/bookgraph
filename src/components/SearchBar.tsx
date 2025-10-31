@@ -1,16 +1,19 @@
 import { useState } from "react";
-import { Search, Plus } from "lucide-react";
+import { Search, Upload, FileText, Loader2, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface SearchBarProps {
   onSearch: (query: string, type: "title" | "author" | "isbn") => void;
+  onGoodReadsImport?: (file: File) => void;
+  onManualAdd?: () => void;
   isLoading?: boolean;
+  isImportingGoodReads?: boolean;
   onClear?: () => void;
 }
 
-export function SearchBar({ onSearch, isLoading, onClear }: SearchBarProps) {
+export function SearchBar({ onSearch, isLoading, onClear, onGoodReadsImport, isImportingGoodReads, onManualAdd }: SearchBarProps) {
   const [query, setQuery] = useState("");
   const [searchType, setSearchType] = useState<"title" | "author" | "isbn">("title");
 
@@ -21,39 +24,106 @@ export function SearchBar({ onSearch, isLoading, onClear }: SearchBarProps) {
     }
   };
 
+  const handleGoodReadsImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && onGoodReadsImport) {
+      onGoodReadsImport(file);
+      // Reset the input so the same file can be imported again
+      e.target.value = '';
+    }
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2 w-full max-w-2xl">
-      <Select value={searchType} onValueChange={(value: any) => setSearchType(value)}>
-        <SelectTrigger className="w-32">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="title">Title</SelectItem>
-          <SelectItem value="author">Author</SelectItem>
-          <SelectItem value="isbn">ISBN</SelectItem>
-        </SelectContent>
-      </Select>
-      
-      <Input
-        type="text"
-        placeholder={`Search by ${searchType}...`}
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        className="flex-1"
-      />
-      
-      <div className="flex items-center gap-2">
-        <Button type="submit" disabled={isLoading || !query.trim()}>
-          <Search className="w-4 h-4 mr-2" />
-          Search
-        </Button>
-        {query.trim() !== "" && (
-          <Button type="button" variant="ghost" onClick={() => { setQuery(""); onClear?.(); }}>
-            <Plus className="hidden" />{/* keep icon import stable if needed */}
-            Clear
+    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full">
+      {/* Search Form */}
+      <form onSubmit={handleSubmit} className="flex gap-2 w-full sm:flex-1">
+        <Select value={searchType} onValueChange={(value: any) => setSearchType(value)}>
+          <SelectTrigger className="w-32">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="title">Title</SelectItem>
+            <SelectItem value="author">Author</SelectItem>
+            <SelectItem value="isbn">ISBN</SelectItem>
+          </SelectContent>
+        </Select>
+        
+        <Input
+          type="text"
+          placeholder={`Search by ${searchType}...`}
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            if (e.target.value.trim() === "") {
+              onClear?.();
+            }
+          }}
+          className="flex-1"
+        />
+        
+        <div className="flex items-center gap-2">
+          <Button type="submit" disabled={isLoading || !query.trim()}>
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin sm:mr-2" />
+            ) : (
+              <Search className="w-4 h-4 sm:mr-2" />
+            )}
+            <span className="hidden sm:inline">{isLoading ? "Searching..." : "Search"}</span>
+          </Button>
+          
+          {query.trim() !== "" && (
+            <Button type="button" variant="ghost" onClick={() => { setQuery(""); onClear?.(); }}>
+              Clear
+            </Button>
+          )}
+        </div>
+      </form>
+
+      {/* Action Buttons - Below on mobile, inline on desktop */}
+      <div className="flex items-center gap-2 w-full sm:w-auto sm:flex-shrink-0">
+        {/* Manual Add Button */}
+        {onManualAdd && (
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={onManualAdd} 
+            title="Add book manually"
+            className="flex-1 sm:flex-initial"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            <span>Add Book</span>
+          </Button>
+        )}
+        
+        {/* GoodReads Import */}
+        {onGoodReadsImport && (
+          <Button 
+            variant="outline" 
+            asChild={!isImportingGoodReads} 
+            disabled={isImportingGoodReads} 
+            className="flex-1 sm:flex-initial text-sm whitespace-nowrap"
+            title="Import from GoodReads"
+          >
+            {isImportingGoodReads ? (
+              <div className="flex items-center gap-2 justify-center">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Importing...</span>
+              </div>
+            ) : (
+              <label className="cursor-pointer flex items-center gap-2 justify-center">
+                <FileText className="w-4 h-4" />
+                <span>Import from GoodReads</span>
+                <input
+                  type="file"
+                  accept=".csv"
+                  className="hidden"
+                  onChange={handleGoodReadsImport}
+                />
+              </label>
+            )}
           </Button>
         )}
       </div>
-    </form>
+    </div>
   );
 }
