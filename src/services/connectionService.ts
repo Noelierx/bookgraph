@@ -39,9 +39,6 @@ const commonKeywords = e1.keywords.filter(k => e2.keywords.includes(k));
 const commonThemes = e1.themes.filter(t => e2.themes.includes(t));
 const commonPlots = e1.plots.filter(p => e2.plots.includes(p));
 
-console.log(`[analyze.compare] ${book1.id}("${book1.title}") <> ${book2.id}("${book2.title}")`);
-console.log(`[analyze.compare] commonSubjects=${JSON.stringify(commonSubjects || [])} commonKeywords=${JSON.stringify(commonKeywords)} commonThemes=${JSON.stringify(commonThemes)} commonPlots=${JSON.stringify(commonPlots)}`);
-
 if (book1.description && book2.description) {
         if (commonKeywords.length > 0) {
           strength += Math.min(commonKeywords.length * 0.12, 0.5);

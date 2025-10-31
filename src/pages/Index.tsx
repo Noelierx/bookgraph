@@ -9,9 +9,12 @@ import { BooksList } from "@/components/BooksList";
 import { Button } from "@/components/ui/button";
 import { Plus, BookOpen, RefreshCw, Download, Upload, Info } from "lucide-react";
 import HelpModal from "@/components/HelpModal";
+import { ImportProgress } from "@/components/ImportProgress";
 import { searchBooks } from "@/services/openLibraryService";
 import { analyzeBookConnections } from "@/services/connectionService";
 import { exportBooksToJSON, importBooksFromJSON } from "@/services/importExportService";
+import { importGoodReadsCSV } from "@/services/goodreadsImportService";
+import { processImportWithMerge } from "@/services/deduplicationService";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -24,6 +27,9 @@ const Index = () => {
   const [selectedBookId, setSelectedBookId] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isImportingGoodReads, setIsImportingGoodReads] = useState(false);
+  const [isImportingJSON, setIsImportingJSON] = useState(false);
+  const [importProgress, setImportProgress] = useState({ current: 0, total: 0, message: "" });
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
@@ -140,23 +146,83 @@ const Index = () => {
     const file = event.target.files?.[0];
     if (!file) return;
     
+    setIsImportingJSON(true);
+    setImportProgress({ current: 0, total: 0, message: "Starting import..." });
+    
     try {
-      const importedBooks = await importBooksFromJSON(file);
-      const existingIds = new Set(books.map(b => b.id));
-      const newBooks = importedBooks.filter(b => !existingIds.has(b.id));
+      const importedBooks = await importBooksFromJSON(file, (current, total, message) => {
+        setImportProgress({ current, total, message });
+      });
       
-      if (newBooks.length === 0) {
+      const { updatedBooks, newBooks } = processImportWithMerge(importedBooks, books);
+      setBooks(updatedBooks);
+
+      const addedCount = newBooks.length;
+      const mergedCount = importedBooks.length - newBooks.length;
+
+      if (addedCount === 0 && mergedCount === 0) {
         toast.info("All books from import already exist in your collection");
       } else {
-        setBooks([...books, ...newBooks]);
-        toast.success(`Imported ${newBooks.length} new books`);
+        let message = '';
+        if (addedCount > 0 && mergedCount > 0) {
+          message = `Added ${addedCount} new books and merged ${mergedCount} duplicates`;
+        } else if (addedCount > 0) {
+          message = `Imported ${addedCount} new books`;
+        } else {
+          message = `Merged ${mergedCount} books with existing collection`;
+        }
+
+        toast.success(message);
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to import books");
-      console.error(error);
+      console.error('❌ JSON import error:', error);
+    } finally {
+      setIsImportingJSON(false);
     }
     
     event.target.value = "";
+  };
+
+  const handleGoodReadsImport = async (file: File) => {
+    setIsImportingGoodReads(true);
+    setImportProgress({ current: 0, total: 0, message: "Starting import..." });
+    
+    try {
+      toast.info("Importing GoodReads CSV... This may take a moment as we enrich the data.");
+      
+      const importedBooks = await importGoodReadsCSV(file, (current, total, message) => {
+        setImportProgress({ current, total, message });
+      });
+      
+      if (importedBooks.length === 0) {
+        toast.error("No valid books found in the GoodReads export");
+      } else {
+        const { updatedBooks, newBooks } = processImportWithMerge(importedBooks, books);
+              
+        setBooks(updatedBooks);
+        
+        const addedCount = newBooks.length;
+        const mergedCount = importedBooks.length - newBooks.length;
+        
+        let message = '';
+        if (addedCount > 0 && mergedCount > 0) {
+          message = `Added ${addedCount} new books and merged ${mergedCount} duplicates from GoodReads`;
+        } else if (addedCount > 0) {
+          message = `Imported ${addedCount} books from GoodReads`;
+        } else if (mergedCount > 0) {
+          message = `Merged ${mergedCount} books with existing collection from GoodReads`;
+        } else {
+          message = "No new books to import from GoodReads";
+        }
+        
+        toast.success(message);
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to import GoodReads CSV");
+    } finally {
+      setIsImportingGoodReads(false);
+    }
   };
 
   const graphData: GraphData = useMemo(() => {
@@ -207,17 +273,24 @@ const Index = () => {
                 <Download className="w-4 h-4" aria-hidden="true" />
                 <span className="hidden sm:inline ml-2">Export</span>
               </Button>
-              <Button variant="outline" asChild aria-label="Import">
-                <label className="cursor-pointer flex items-center">
-                  <Upload className="w-4 h-4" aria-hidden="true" />
-                  <span className="hidden sm:inline ml-2">Import</span>
-                  <input
-                    type="file"
-                    accept=".json"
-                    className="hidden"
-                    onChange={handleImport}
-                  />
-                </label>
+              <Button variant="outline" asChild={!isImportingJSON} disabled={isImportingJSON} aria-label="Import">
+                {isImportingJSON ? (
+                  <div className="flex items-center gap-2">
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span className="hidden sm:inline">Importing...</span>
+                  </div>
+                ) : (
+                  <label className="cursor-pointer flex items-center">
+                    <Upload className="w-4 h-4" aria-hidden="true" />
+                    <span className="hidden sm:inline ml-2">Import</span>
+                    <input
+                      type="file"
+                      accept=".json"
+                      className="hidden"
+                      onChange={handleImport}
+                    />
+                  </label>
+                )}
               </Button>
               <Button variant="outline" onClick={handleAnalyzeConnections} disabled={isAnalyzing || books.length < 2} aria-label="Analyze">
                 <RefreshCw className={`w-4 h-4 ${isAnalyzing ? "animate-spin" : ""}`} aria-hidden="true" />
@@ -230,16 +303,25 @@ const Index = () => {
             </div>
           </div>
 
-          <div className="flex items-center justify-between gap-3">
+          <div className="w-full">
             <SearchBar
               onSearch={handleSearch}
+              onGoodReadsImport={handleGoodReadsImport}
+              onManualAdd={handleAddCustomBook}
               isLoading={isSearching}
+              isImportingGoodReads={isImportingGoodReads}
               onClear={() => setSearchResults([])}
             />
-            <Button onClick={handleAddCustomBook} aria-label="Add Book manually" className="ml-2">
-              <Plus className="w-4 h-4" aria-hidden="true" />
-              <span className="hidden sm:inline ml-2">Add Book manually</span>
-            </Button>
+            
+            {searchResults.length > 0 && (
+              <div className="mt-4">
+                <SearchResults
+                  books={searchResults}
+                  onAddBook={handleAddBook}
+                  existingBookIds={existingBookIds}
+                />
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -294,14 +376,6 @@ const Index = () => {
                 />
               </div>
             )}
-            
-            {searchResults.length > 0 && (
-              <SearchResults
-                books={searchResults}
-                onAddBook={handleAddBook}
-                existingBookIds={existingBookIds}
-              />
-            )}
           </div>
         </div>
       </main>
@@ -313,6 +387,22 @@ const Index = () => {
       />
 
       <HelpModal open={showHelpModal} onClose={() => setShowHelpModal(false)} />
+
+      <ImportProgress
+        isVisible={isImportingGoodReads}
+        current={importProgress.current}
+        total={importProgress.total}
+        message={importProgress.message}
+        type="goodreads"
+      />
+
+      <ImportProgress
+        isVisible={isImportingJSON}
+        current={importProgress.current}
+        total={importProgress.total}
+        message={importProgress.message}
+        type="json"
+      />
     </div>
   );
 };

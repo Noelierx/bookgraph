@@ -1,4 +1,5 @@
 import { Book } from "@/types/book";
+import { removeDuplicatesFromList } from "./deduplicationService";
 
 export interface ExportData {
   version: string;
@@ -6,9 +7,6 @@ export interface ExportData {
   books: Book[];
 }
 
-/**
- * Export books to a JSON file
- */
 export const exportBooksToJSON = (books: Book[]): void => {
   const exportData: ExportData = {
     version: "1.0",
@@ -29,29 +27,31 @@ export const exportBooksToJSON = (books: Book[]): void => {
   URL.revokeObjectURL(url);
 };
 
-/**
- * Import books from a JSON file
- */
-export const importBooksFromJSON = (file: File): Promise<Book[]> => {
+export const importBooksFromJSON = (
+  file: File,
+  onProgress?: (current: number, total: number, message: string) => void
+): Promise<Book[]> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const jsonString = event.target?.result as string;
         const data = JSON.parse(jsonString);
         
-        // Validate the structure
         if (!data.books || !Array.isArray(data.books)) {
           throw new Error("Invalid import file: 'books' array not found");
         }
         
-        // Validate each book has required fields
-        const validatedBooks: Book[] = data.books.map((book: unknown) => {
+        onProgress?.(0, data.books.length, "Validating books...");
+        
+        const validatedBooks: Book[] = data.books.map((book: unknown, index: number) => {
           const b = book as Record<string, unknown>;
           if (!b.id || !b.title || !b.author) {
-            throw new Error("Invalid book data: missing required fields (id, title, author)");
+            throw new Error(`Invalid book data at index ${index}: missing required fields (id, title, author)`);
           }
+          
+          onProgress?.(index + 1, data.books.length, `Validating "${String(b.title)}" by ${String(b.author)}`);
           
           return {
             id: String(b.id),
@@ -65,7 +65,13 @@ export const importBooksFromJSON = (file: File): Promise<Book[]> => {
           };
         });
         
-        resolve(validatedBooks);
+        onProgress?.(data.books.length, data.books.length, "Removing duplicates within import...");
+        
+        const { uniqueBooks } = removeDuplicatesFromList(validatedBooks);
+        
+        onProgress?.(data.books.length, data.books.length, "Import completed!");
+        
+        resolve(uniqueBooks);
       } catch (error) {
         reject(error instanceof Error ? error : new Error("Failed to parse JSON file"));
       }
