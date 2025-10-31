@@ -160,7 +160,7 @@ const Index = () => {
       } else {
         setBooks(updatedBooks);
         const addedCount = newBooks.length;
-        const mergedCount = importedBooks.length - newBooks.length;
+        const mergedCount = updatedBooks.length - books.length - newBooks.length;
         
         let message = '';
         if (addedCount > 0 && mergedCount > 0) {
@@ -206,7 +206,7 @@ const Index = () => {
       setBooks(updatedBooks);
       
       const addedCount = newBooks.length;
-      const mergedCount = importedBooks.length - newBooks.length;
+      const mergedCount = updatedBooks.length - books.length - newBooks.length;
       
       let message = '';
       if (addedCount > 0 && mergedCount > 0) {

@@ -35,7 +35,7 @@ export function SearchBar({ onSearch, isLoading, onClear, onGoodReadsImport, isI
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full">
       <form onSubmit={handleSubmit} className="flex gap-2 w-full sm:flex-1">
-        <Select value={searchType} onValueChange={(value: any) => setSearchType(value)}>
+        <Select value={searchType} onValueChange={(value: "title" | "author" | "isbn") => setSearchType(value)}>
           <SelectTrigger className="w-32">
             <SelectValue />
           </SelectTrigger>

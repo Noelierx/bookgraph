@@ -10,8 +10,38 @@ export interface GoodReadsBook {
   "ISBN13": string;
 }
 
+function splitCSVRows(csvContent: string): string[] {
+  const rows: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < csvContent.length; i++) {
+    const char = csvContent[i];
+
+    if (char === '"') {
+      current += char;
+      if (csvContent[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === '\n' && !inQuotes) {
+      rows.push(current);
+      current = "";
+    } else if (char === '\r') {
+      if (inQuotes) current += char;
+    } else {
+      current += char;
+    }
+  }
+
+  if (current.trim()) rows.push(current);
+  return rows;
+}
+
 function parseGoodReadsCSV(csvContent: string): GoodReadsBook[] {
-  const lines = csvContent.split('\n');
+  const lines = splitCSVRows(csvContent);
   if (lines.length < 2) return [];
   
   const headerLine = lines[0];
@@ -25,9 +55,9 @@ function parseGoodReadsCSV(csvContent: string): GoodReadsBook[] {
     const values = parseCSVLine(line);
     
     if (values.length >= headers.length) {
-      const book: any = {};
+      const book: Partial<GoodReadsBook> = {};
       headers.forEach((header, index) => {
-        book[header] = values[index] || '';
+        book[header as keyof GoodReadsBook] = values[index] || '';
       });
       books.push(book as GoodReadsBook);
     }
