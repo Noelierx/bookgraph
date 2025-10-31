@@ -197,28 +197,27 @@ const Index = () => {
       
       if (importedBooks.length === 0) {
         toast.error("No valid books found in the GoodReads export");
-        return;
-      }
-      
-      const { updatedBooks, newBooks } = processImportWithMerge(importedBooks, books);
-            
-      setBooks(updatedBooks);
-      
-      const addedCount = newBooks.length;
-      const mergedCount = importedBooks.length - newBooks.length;
-      
-      let message = '';
-      if (addedCount > 0 && mergedCount > 0) {
-        message = `Added ${addedCount} new books and merged ${mergedCount} duplicates from GoodReads`;
-      } else if (addedCount > 0) {
-        message = `Imported ${addedCount} books from GoodReads`;
-      } else if (mergedCount > 0) {
-        message = `Merged ${mergedCount} books with existing collection from GoodReads`;
       } else {
-        message = "No new books to import from GoodReads";
+        const { updatedBooks, newBooks } = processImportWithMerge(importedBooks, books);
+              
+        setBooks(updatedBooks);
+        
+        const addedCount = newBooks.length;
+        const mergedCount = importedBooks.length - newBooks.length;
+        
+        let message = '';
+        if (addedCount > 0 && mergedCount > 0) {
+          message = `Added ${addedCount} new books and merged ${mergedCount} duplicates from GoodReads`;
+        } else if (addedCount > 0) {
+          message = `Imported ${addedCount} books from GoodReads`;
+        } else if (mergedCount > 0) {
+          message = `Merged ${mergedCount} books with existing collection from GoodReads`;
+        } else {
+          message = "No new books to import from GoodReads";
+        }
+        
+        toast.success(message);
       }
-      
-      toast.success(message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to import GoodReads CSV");
     } finally {

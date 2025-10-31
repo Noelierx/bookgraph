@@ -85,8 +85,8 @@ export function BookDetails({ book, onClose, onEdit, onRemove }: BookDetailsProp
           <Button variant="destructive" onClick={() => onRemove(book.id)} className="flex-1">
             Remove
           </Button>
-          {book.id.startsWith("/works/") && (
-            <Button variant="outline" size="icon" asChild>
+          {(book.id.startsWith("/works/") || book.id.startsWith("/books/") || book.id.startsWith("/authors/")) && (
+            <Button variant="outline" size="icon" asChild title="View on OpenLibrary">
               <a href={`https://openlibrary.org${book.id}`} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="w-4 h-4" />
               </a>

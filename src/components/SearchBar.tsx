@@ -16,6 +16,7 @@ interface SearchBarProps {
 export function SearchBar({ onSearch, isLoading, onClear, onGoodReadsImport, isImportingGoodReads, onManualAdd }: SearchBarProps) {
   const [query, setQuery] = useState("");
   const [searchType, setSearchType] = useState<"title" | "author" | "isbn">("title");
+  const [wasNonEmpty, setWasNonEmpty] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,8 +52,14 @@ export function SearchBar({ onSearch, isLoading, onClear, onGoodReadsImport, isI
           placeholder={`Search by ${searchType}...`}
           value={query}
           onChange={(e) => {
-            setQuery(e.target.value);
-            if (e.target.value.trim() === "") {
+            const newValue = e.target.value;
+            const isNewValueEmpty = newValue.trim() === "";
+            const shouldCallClear = wasNonEmpty && isNewValueEmpty;
+            
+            setQuery(newValue);
+            setWasNonEmpty(!isNewValueEmpty);
+            
+            if (shouldCallClear) {
               onClear?.();
             }
           }}
@@ -70,7 +77,11 @@ export function SearchBar({ onSearch, isLoading, onClear, onGoodReadsImport, isI
           </Button>
           
           {query.trim() !== "" && (
-            <Button type="button" variant="ghost" onClick={() => { setQuery(""); onClear?.(); }}>
+            <Button type="button" variant="ghost" onClick={() => { 
+              setQuery(""); 
+              setWasNonEmpty(false);
+              onClear?.(); 
+            }}>
               Clear
             </Button>
           )}

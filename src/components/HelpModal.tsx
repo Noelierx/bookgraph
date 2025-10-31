@@ -65,28 +65,28 @@ export default function HelpModal({ open, onClose }: HelpModalProps) {
             <div className="bg-green-50 dark:bg-green-950/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
               <h4 className="font-medium mb-2 flex items-center gap-2 text-green-900 dark:text-green-100">
                 <FileText className="w-4 h-4" />
-                GoodReads CSV Import
+                Goodreads CSV Import
               </h4>
               <p className="text-sm text-green-800 dark:text-green-100 mb-2">
-                Add books from your GoodReads export to your existing collection.
+                Add books from your Goodreads export to your existing collection.
               </p>
               <ul className="text-sm text-green-700 dark:text-green-200 space-y-1 list-disc list-inside mb-3">
-                <li><strong>Button:</strong> "Import GoodReads CSV" in the search bar</li>
-                <li><strong>Format:</strong> CSV file exported from GoodReads (.csv)</li>
+                <li><strong>Button:</strong> "Import Goodreads CSV" in the search bar</li>
+                <li><strong>Format:</strong> CSV file exported from Goodreads (.csv)</li>
                 <li><strong>Effect:</strong> Adds new books to your collection (no replacement)</li>
                 <li><strong>Deduplication:</strong> Automatically avoids duplicates</li>
                 <li><strong>Data:</strong> Title, author, ISBN, review, shelves/subjects</li>
               </ul>
               <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded border border-green-300 dark:border-green-700">
                 <p className="text-xs text-green-900 dark:text-green-100">
-                  <strong>Need help exporting from GoodReads?</strong>{" "}
+                  <strong>Need help exporting from Goodreads?</strong>{" "}
                   <a 
                     href="https://help.goodreads.com/s/article/How-do-I-import-or-export-my-books-1553870934590" 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="underline hover:text-green-700 dark:hover:text-green-200 focus:outline-none focus:ring-2 focus:ring-green-500"
                   >
-                    See GoodReads export guide →
+                    See Goodreads export guide →
                   </a>
                 </p>
               </div>

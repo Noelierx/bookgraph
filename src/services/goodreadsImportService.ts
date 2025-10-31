@@ -20,7 +20,7 @@ function splitCSVRows(csvContent: string): string[] {
 
     if (char === '"') {
       current += char;
-      if (csvContent[i + 1] === '"') {
+      if (i + 1 < csvContent.length && csvContent[i + 1] === '"') {
         current += '"';
         i++;
       } else {
@@ -76,7 +76,7 @@ function parseCSVLine(line: string): string[] {
     const char = line[i];
     
     if (char === '"') {
-      if (inQuotes && line[i + 1] === '"') {
+      if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
         currentValue += '"';
         i += 2;
         continue;
@@ -104,9 +104,9 @@ async function enrichWithOpenLibraryData(book: Book): Promise<Book> {
         const olBook = openLibraryBooks[0];
         
         return {
-          id: olBook.id,
+          id: olBook.id || book.id,
           title: olBook.title || book.title,
-          author: olBook.author || book.author,
+          author: (olBook.author && olBook.author !== "Unknown Author" && olBook.author.trim()) ? olBook.author : book.author,
           isbn: olBook.isbn || book.isbn,
           description: olBook.description || book.description,
           publishYear: olBook.publishYear || book.publishYear,

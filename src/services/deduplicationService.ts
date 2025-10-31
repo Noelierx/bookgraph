@@ -87,25 +87,29 @@ export function mergeBookData(existingBook: Book, newBook: Book): Book {
   const existingAuthorNorm = normalizeAuthor(existingBook.author);
   const newAuthorNorm = normalizeAuthor(newBook.author);
   
-  if (existingAuthorNorm === 'unknown author' && newAuthorNorm !== 'unknown author') {
+  // Only update author if new book has meaningful author data
+  if (existingAuthorNorm === 'unknown author' && newAuthorNorm !== 'unknown author' && newBook.author.trim()) {
     merged.author = newBook.author;
-  } else if (newAuthorNorm !== 'unknown author' && newBook.author.length > existingBook.author.length) {
+  } else if (newAuthorNorm !== 'unknown author' && newBook.author.trim() && 
+             newBook.author.length > existingBook.author.length) {
     merged.author = newBook.author;
   }
   
-  if (!merged.description && newBook.description) {
+  if (!merged.description && newBook.description && newBook.description.trim()) {
     merged.description = newBook.description;
-  } else if (newBook.description && newBook.description.length > (merged.description?.length || 0)) {
+  } else if (newBook.description && newBook.description.trim() && 
+             newBook.description.length > (merged.description?.length || 0)) {
     merged.description = newBook.description;
   }
   
-  if (!merged.isbn && newBook.isbn) {
+  if (!merged.isbn && newBook.isbn && newBook.isbn.trim()) {
     merged.isbn = newBook.isbn;
-  } else if (newBook.isbn && newBook.isbn.length > (merged.isbn?.length || 0)) {
+  } else if (newBook.isbn && newBook.isbn.trim() && 
+             newBook.isbn.length > (merged.isbn?.length || 0)) {
     merged.isbn = newBook.isbn;
   }
   
-  if (!merged.coverUrl && newBook.coverUrl) {
+  if (!merged.coverUrl && newBook.coverUrl && newBook.coverUrl.trim()) {
     merged.coverUrl = newBook.coverUrl;
   }
   
@@ -186,11 +190,9 @@ export function processImportWithMerge(booksToImport: Book[], existingBooks: Boo
         }
       }
       
-      // Mark all found duplicates as processed
       processedInImport.add(i);
       duplicateIndices.forEach(index => processedInImport.add(index));
       
-      // Add the merged book (or original if no duplicates found)
       newBooks.push(mergedBook);
     }
   }
@@ -209,7 +211,7 @@ export function removeDuplicatesFromList(books: Book[]): { uniqueBooks: Book[]; 
   const uniqueBooks: Book[] = [];
   const seenIds = new Set<string>();
   const seenIsbns = new Map<string, number>();
-  const seenTitleAuthor = new Map<string, number>();
+  const seenTitleAuthor = new Map<string, { title: string; author: string; index: number }>();
   let duplicatesCount = 0;
 
   for (const book of books) {
@@ -226,8 +228,6 @@ export function removeDuplicatesFromList(books: Book[]): { uniqueBooks: Book[]; 
         if (seenIsbns.has(cleanIsbn)) {
           isDuplicate = true;
           duplicatesCount++;
-        } else {
-          seenIsbns.set(cleanIsbn, uniqueBooks.length);
         }
       }
 
@@ -236,11 +236,9 @@ export function removeDuplicatesFromList(books: Book[]): { uniqueBooks: Book[]; 
         const normalizedAuthor = normalizeAuthor(book.author);
         
         let foundSimilar = false;
-        for (const [existingKey] of seenTitleAuthor.entries()) {
-          const [existingNormalizedTitle, existingNormalizedAuthor] = existingKey.split('::');
-          
-          if (areTitlesSimilar(normalizedTitle, existingNormalizedTitle) && 
-              areAuthorsSimilar(normalizedAuthor, existingNormalizedAuthor)) {
+        for (const [, existingData] of seenTitleAuthor.entries()) {
+          if (areTitlesSimilar(normalizedTitle, existingData.title) && 
+              areAuthorsSimilar(normalizedAuthor, existingData.author)) {
             isDuplicate = true;
             duplicatesCount++;
             foundSimilar = true;
@@ -249,14 +247,22 @@ export function removeDuplicatesFromList(books: Book[]): { uniqueBooks: Book[]; 
         }
         
         if (!foundSimilar) {
-          const titleAuthorKey = `${normalizedTitle}::${normalizedAuthor}`;
-          seenTitleAuthor.set(titleAuthorKey, uniqueBooks.length);
+          uniqueBooks.push(book);
+          const currentIndex = uniqueBooks.length - 1;
+          
+          if (book.isbn && book.isbn.length >= 10) {
+            const cleanIsbn = book.isbn.replace(/[^0-9X]/gi, '');
+            seenIsbns.set(cleanIsbn, currentIndex);
+          }
+          
+          const titleAuthorKey = `${normalizedTitle}|||${normalizedAuthor}`;
+          seenTitleAuthor.set(titleAuthorKey, {
+            title: normalizedTitle,
+            author: normalizedAuthor,
+            index: currentIndex
+          });
         }
       }
-    }
-
-    if (!isDuplicate) {
-      uniqueBooks.push(book);
     }
   }
 
