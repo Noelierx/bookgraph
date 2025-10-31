@@ -1,11 +1,12 @@
 import { Book, BookConnection, RelationshipType } from "@/types/book";
+import { trExtractKeywords } from "./textRankService";
 
 export async function analyzeBookConnections(books: Book[]): Promise<BookConnection[]> {
   const connections: BookConnection[] = [];
 
   const extracts = books.map(b => {
     const text = b.description || "";
-    const keywords = extractKeywords(text);
+    const keywords = trExtractKeywords(text, 30, 4);
     const themes = extractThemes(text);
     const plots = extractPlotElements(text);
     return { id: b.id, keywords, themes, plots };
@@ -74,35 +75,6 @@ if (book1.description && book2.description) {
   }
   
   return connections;
-}
-
-function extractKeywords(text: string): string[] {
-  const commonWords = new Set([
-    "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", 
-    "by", "from", "as", "is", "was", "are", "were", "been", "be", "have", "has", "had",
-    "do", "does", "did", "will", "would", "could", "should", "may", "might", "must", "can",
-    "this", "that", "these", "those", "it", "he", "she", "they", "we", "you", "i", "his",
-    "her", "their", "our", "your", "into", "through", "during", "before", "after", "above",
-    "below", "between", "under", "again", "further", "then", "once", "here", "there", "when",
-    "where", "why", "how", "all", "both", "each", "few", "more", "most", "other", "some",
-    "such", "only", "own", "same", "than", "too", "very", "about", "which", "who", "what",
-  ]);
-  
-  const words = text
-    .toLowerCase()
-    .replace(/[^\w\s]/g, " ")
-    .split(/\s+/)
-    .filter(word => word.length > 3 && !commonWords.has(word));
-  
-  const frequency = new Map<string, number>();
-  words.forEach(word => {
-    frequency.set(word, (frequency.get(word) || 0) + 1);
-  });
-  
-  return Array.from(frequency.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 30)
-    .map(([word]) => word);
 }
 
 function extractThemes(text: string): string[] {
