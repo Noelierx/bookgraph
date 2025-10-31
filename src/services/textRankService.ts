@@ -52,7 +52,7 @@ function detectLanguage(text: string): 'en' | 'fr' | 'es' | 'de' | 'unknown' {
   const maxScore = Math.max(...Object.values(scores));
   if (maxScore < 3) return 'unknown';
   
-  return Object.keys(scores).find(lang => scores[lang as keyof typeof scores] === maxScore) as 'en' | 'fr' | 'es' | 'de' || 'unknown';
+  return (Object.keys(scores).find(lang => scores[lang as keyof typeof scores] === maxScore) as 'en' | 'fr' | 'es' | 'de') || 'unknown';
 }
 
 function getStopWords(language: string): Set<string> {
