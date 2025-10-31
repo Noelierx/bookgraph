@@ -108,7 +108,7 @@ export function SearchBar({ onSearch, isLoading, onClear, onGoodReadsImport, isI
             asChild={!isImportingGoodReads} 
             disabled={isImportingGoodReads} 
             className="flex-1 sm:flex-initial text-sm whitespace-nowrap"
-            title="Import from GoodReads"
+            title="Import from Goodreads"
           >
             {isImportingGoodReads ? (
               <div className="flex items-center gap-2 justify-center">
@@ -118,7 +118,7 @@ export function SearchBar({ onSearch, isLoading, onClear, onGoodReadsImport, isI
             ) : (
               <label className="cursor-pointer flex items-center gap-2 justify-center">
                 <FileText className="w-4 h-4" />
-                <span>Import from GoodReads</span>
+                <span>Import from Goodreads</span>
                 <input
                   type="file"
                   accept=".csv"
