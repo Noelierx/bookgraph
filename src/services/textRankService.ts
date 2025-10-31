@@ -18,7 +18,7 @@ const stopWordsFr = new Set(['le', 'de', 'et', 'à', 'un', 'il', 'être', 'en', 
     'autre', 'mais', 'ou', 'où', 'si', 'leur', 'y', 'dire', 'elle', 'depuis', 'car', 'deux', 'comment',
     'très', 'sans', 'nous', 'vous', 'lors', 'cette', 'celui', 'celle', 'ces', 'ceux', 'donc',
     'bien', 'aussi', 'peut', 'fait', 'faire', 'voir', 'aller', 'venir', 'temps', 'même', 'encore',
-    'été', 'déjà', 'là', 'après', 'dès', 'été', 'jusqu', 'plutôt', 'voilà'
+    'été', 'déjà', 'là', 'après', 'dès', 'jusqu', 'plutôt', 'voilà'
 ]);
 
 const stopWordsEs = new Set(['el', 'la', 'de', 'que', 'y', 'a', 'en', 'un', 'ser', 'se', 'no', 'te', 'lo', 'le',
