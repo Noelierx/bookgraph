@@ -107,7 +107,7 @@ function convertGoodReadsBookToBook(grBook: GoodReadsBook): Book | null {
   }
   
   return {
-    id: `goodreads-${grBook["Book Id"] || Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    id: `goodreads-${grBook["Book Id"] || Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
     title: grBook.Title.trim(),
     author: grBook.Author.trim(),
     isbn: finalIsbn,

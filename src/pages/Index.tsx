@@ -155,7 +155,7 @@ const Index = () => {
       });
       
       const { updatedBooks, newBooks } = processImportWithMerge(importedBooks, books);
-      if (updatedBooks.length === books.length) {
+      if (newBooks.length === 0 && updatedBooks.length === books.length) {
         toast.info("All books from import already exist in your collection");
       } else {
         setBooks(updatedBooks);

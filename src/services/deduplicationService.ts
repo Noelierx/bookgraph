@@ -8,7 +8,7 @@ export function normalizeTitle(title: string): string {
     .replace(/^(the|a|an)\s+/i, '')
     .replace(/\s*\([^)]*\)\s*/g, ' ')
     .replace(/\s*:\s*.*$/, '')
-    .replace(/[''`]/g, '')
+    .replace(/['`]/g, '')
     .replace(/[^\w\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
@@ -179,6 +179,7 @@ export function processImportWithMerge(booksToImport: Book[], existingBooks: Boo
         
         if (internalDuplicateResult.isDuplicate && internalDuplicateResult.mergedBook) {
           newBooks.push(internalDuplicateResult.mergedBook);
+          processedInImport.add(i);
           processedInImport.add(j);
           foundInImportBatch = true;
           break;
@@ -204,7 +205,8 @@ export function removeDuplicatesFromImport(booksToImport: Book[], existingBooks:
 export function removeDuplicatesFromList(books: Book[]): { uniqueBooks: Book[]; duplicatesCount: number } {
   const uniqueBooks: Book[] = [];
   const seenIds = new Set<string>();
-  const seenTitleAuthor = new Set<string>();
+  const seenIsbns = new Map<string, number>();
+  const seenTitleAuthor = new Map<string, number>();
   let duplicatesCount = 0;
 
   for (const book of books) {
@@ -218,15 +220,11 @@ export function removeDuplicatesFromList(books: Book[]): { uniqueBooks: Book[]; 
 
       if (book.isbn && book.isbn.length >= 10) {
         const cleanIsbn = book.isbn.replace(/[^0-9X]/gi, '');
-        const isbnDuplicate = uniqueBooks.find(existingBook => {
-          if (!existingBook.isbn || existingBook.isbn.length < 10) return false;
-          const existingCleanIsbn = existingBook.isbn.replace(/[^0-9X]/gi, '');
-          return cleanIsbn === existingCleanIsbn;
-        });
-
-        if (isbnDuplicate) {
+        if (seenIsbns.has(cleanIsbn)) {
           isDuplicate = true;
           duplicatesCount++;
+        } else {
+          seenIsbns.set(cleanIsbn, uniqueBooks.length);
         }
       }
 
@@ -234,20 +232,22 @@ export function removeDuplicatesFromList(books: Book[]): { uniqueBooks: Book[]; 
         const normalizedTitle = normalizeTitle(book.title);
         const normalizedAuthor = normalizeAuthor(book.author);
         
-        const similarTitleDuplicate = uniqueBooks.find(existingBook => {
-          const existingNormalizedTitle = normalizeTitle(existingBook.title);
-          const existingNormalizedAuthor = normalizeAuthor(existingBook.author);
+        let foundSimilar = false;
+        for (const [existingKey] of seenTitleAuthor.entries()) {
+          const [existingNormalizedTitle, existingNormalizedAuthor] = existingKey.split('::');
           
-          return areTitlesSimilar(normalizedTitle, existingNormalizedTitle) && 
-                 areAuthorsSimilar(normalizedAuthor, existingNormalizedAuthor);
-        });
-
-        if (similarTitleDuplicate) {
-          isDuplicate = true;
-          duplicatesCount++;
-        } else {
+          if (areTitlesSimilar(normalizedTitle, existingNormalizedTitle) && 
+              areAuthorsSimilar(normalizedAuthor, existingNormalizedAuthor)) {
+            isDuplicate = true;
+            duplicatesCount++;
+            foundSimilar = true;
+            break;
+          }
+        }
+        
+        if (!foundSimilar) {
           const titleAuthorKey = `${normalizedTitle}::${normalizedAuthor}`;
-          seenTitleAuthor.add(titleAuthorKey);
+          seenTitleAuthor.set(titleAuthorKey, uniqueBooks.length);
         }
       }
     }

@@ -67,7 +67,7 @@ export const importBooksFromJSON = (
         
         onProgress?.(data.books.length, data.books.length, "Removing duplicates within import...");
         
-        const { uniqueBooks, duplicatesCount } = removeDuplicatesFromList(validatedBooks);
+        const { uniqueBooks } = removeDuplicatesFromList(validatedBooks);
         
         onProgress?.(data.books.length, data.books.length, "Import completed!");
         

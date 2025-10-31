@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Upload, FileText, Loader2, Plus } from "lucide-react";
+import { Search, FileText, Loader2, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -28,14 +28,12 @@ export function SearchBar({ onSearch, isLoading, onClear, onGoodReadsImport, isI
     const file = e.target.files?.[0];
     if (file && onGoodReadsImport) {
       onGoodReadsImport(file);
-      // Reset the input so the same file can be imported again
       e.target.value = '';
     }
   };
 
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full">
-      {/* Search Form */}
       <form onSubmit={handleSubmit} className="flex gap-2 w-full sm:flex-1">
         <Select value={searchType} onValueChange={(value: any) => setSearchType(value)}>
           <SelectTrigger className="w-32">
@@ -79,9 +77,7 @@ export function SearchBar({ onSearch, isLoading, onClear, onGoodReadsImport, isI
         </div>
       </form>
 
-      {/* Action Buttons - Below on mobile, inline on desktop */}
       <div className="flex items-center gap-2 w-full sm:w-auto sm:flex-shrink-0">
-        {/* Manual Add Button */}
         {onManualAdd && (
           <Button 
             type="button" 
@@ -95,7 +91,6 @@ export function SearchBar({ onSearch, isLoading, onClear, onGoodReadsImport, isI
           </Button>
         )}
         
-        {/* GoodReads Import */}
         {onGoodReadsImport && (
           <Button 
             variant="outline" 
