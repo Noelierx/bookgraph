@@ -25,7 +25,7 @@ export async function analyzeBookConnections(books: Book[]): Promise<BookConnect
   });
 
   const englishBooks = extracts.filter(e => e.language === 'en');
-  const otherLanguageBooks = extracts.filter(e => e.language !== 'en');
+  const otherLanguageBooks = extracts.filter(e => e.language !== 'en' && e.language !== 'unknown');
 
   for (let i = 0; i < englishBooks.length; i++) {
     for (let j = i + 1; j < englishBooks.length; j++) {
