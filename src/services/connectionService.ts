@@ -1,11 +1,12 @@
 import { Book, BookConnection, RelationshipType } from "@/types/book";
+import { trExtractKeywords } from "./textRankService";
 
 export async function analyzeBookConnections(books: Book[]): Promise<BookConnection[]> {
   const connections: BookConnection[] = [];
 
   const extracts = books.map(b => {
     const text = b.description || "";
-    const keywords = extractKeywords(text);
+    const keywords = trExtractKeywords(text, 30, 4);
     const themes = extractThemes(text);
     const plots = extractPlotElements(text);
     return { id: b.id, keywords, themes, plots };
