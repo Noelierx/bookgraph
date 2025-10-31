@@ -75,7 +75,7 @@ export default function HelpModal({ open, onClose }: HelpModalProps) {
                 <li><strong>Format:</strong> CSV file exported from Goodreads (.csv)</li>
                 <li><strong>Effect:</strong> Adds new books to your collection (no replacement)</li>
                 <li><strong>Deduplication:</strong> Automatically avoids duplicates</li>
-                <li><strong>Data:</strong> Title, author, ISBN, review, shelves/subjects</li>
+                <li><strong>Data:</strong> Title, author, ISBN</li>
               </ul>
               <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded border border-green-300 dark:border-green-700">
                 <p className="text-xs text-green-900 dark:text-green-100">

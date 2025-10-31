@@ -1,6 +1,6 @@
 type Graph = Map<string, Set<string>>;
 
-const stopWords = new Set(['a', 'about', 'above', 'after', 'again', 'all', 'also', 'am', 'an', 'and',
+const stopWordsEn = new Set(['a', 'about', 'above', 'after', 'again', 'all', 'also', 'am', 'an', 'and',
     'another','any', 'are', 'as', 'at', 'be', 'because', 'been', 'before', 'being', 'below', 'between',
     'both', 'but', 'by', 'came', 'can', 'come', 'could', 'did', 'do', 'does', 'during', 'each',
     'few', 'for', 'from', 'further', 'get', 'got', 'had', 'has', 'have', 'he', 'her', 'here',
@@ -13,10 +13,65 @@ const stopWords = new Set(['a', 'about', 'above', 'after', 'again', 'all', 'also
     'will', 'with', 'would', 'you', 'your'
 ]);
 
-function tokenize(text: String): string[] {
+const stopWordsFr = new Set(['le', 'de', 'et', 'à', 'un', 'il', 'être', 'en', 'avoir', 'que', 'pour',
+    'dans', 'ce', 'son', 'une', 'sur', 'avec', 'ne', 'se', 'pas', 'tout', 'plus', 'par', 'grand', 'comme',
+    'autre', 'mais', 'ou', 'où', 'si', 'leur', 'y', 'dire', 'elle', 'depuis', 'car', 'deux', 'comment',
+    'très', 'sans', 'nous', 'vous', 'lors', 'cette', 'celui', 'celle', 'ces', 'ceux', 'donc',
+    'bien', 'aussi', 'peut', 'fait', 'faire', 'voir', 'aller', 'venir', 'temps', 'même', 'encore',
+    'été', 'déjà', 'là', 'après', 'dès', 'jusqu', 'plutôt', 'voilà'
+]);
+
+const stopWordsEs = new Set(['el', 'la', 'de', 'que', 'y', 'a', 'en', 'un', 'ser', 'se', 'no', 'te', 'lo', 'le',
+    'da', 'su', 'por', 'son', 'con', 'para', 'una', 'él', 'sobre', 'todo', 'las', 'más', 'si', 'al', 'del',
+    'los', 'mi', 'pero', 'sus', 'me', 'hasta', 'donde', 'quien', 'desde', 'nos', 'durante', 'sin', 'muy',
+    'entre', 'cuando', 'ya', 'también', 'solo', 'antes', 'como', 'tanto', 'vez', 'mucho', 'ahora',
+    'así', 'después', 'están', 'había', 'través', 'además', 'sólo', 'cómo', 'allí', 'días'
+]);
+
+const stopWordsDe = new Set(['der', 'die', 'und', 'in', 'den', 'von', 'zu', 'das', 'mit', 'sich', 'des', 'auf',
+    'für', 'ist', 'im', 'dem', 'nicht', 'ein', 'eine', 'als', 'auch', 'es', 'an', 'werden', 'aus', 'er', 'hat',
+    'dass', 'sie', 'nach', 'wird', 'bei', 'einer', 'um', 'am', 'sind', 'noch', 'wie', 'einem', 'über', 'einen',
+    'so', 'zum', 'war', 'haben', 'nur', 'oder', 'aber', 'vor', 'zur', 'bis', 'mehr', 'durch', 'man', 'sein',
+    'wurde', 'sei', 'ihren', 'während', 'können', 'müssen', 'währen', 'größer', 'natürlich', 'tatsächlich'
+]);
+
+function detectLanguage(text: string): 'en' | 'fr' | 'es' | 'de' | 'unknown' {
+  if (!text || text.length < 50) return 'unknown';
+  
+  const words = text.toLowerCase().match(/\b[\p{L}\p{N}_]+\b/gu) || [];
+  const sampleSize = Math.min(100, words.length);
+  const sample = words.slice(0, sampleSize);
+  
+  const scores = {
+    en: sample.filter(w => stopWordsEn.has(w)).length,
+    fr: sample.filter(w => stopWordsFr.has(w)).length,
+    es: sample.filter(w => stopWordsEs.has(w)).length,
+    de: sample.filter(w => stopWordsDe.has(w)).length
+  };
+  
+  const maxScore = Math.max(...Object.values(scores));
+  if (maxScore < 3) return 'unknown';
+  
+  return (Object.keys(scores).find(lang => scores[lang as keyof typeof scores] === maxScore) as 'en' | 'fr' | 'es' | 'de') || 'unknown';
+}
+
+function getStopWords(language: string): Set<string> {
+  switch (language) {
+    case 'fr': return stopWordsFr;
+    case 'es': return stopWordsEs;
+    case 'de': return stopWordsDe;
+    case 'en':
+    default: return stopWordsEn;
+  }
+}
+
+function tokenize(text: string, language?: string): string[] {
+    const detectedLang = language || detectLanguage(text);
+    const stopWords = getStopWords(detectedLang);
+    
     return text
         .toLowerCase()
-        .replace(/[^a-z0-9\s]/g, "")
+        .replace(/[^\p{L}\p{N}\s]/gu, "")
         .split(/\s+/)
         .filter(w => w.length > 2 && !stopWords.has(w));
 }
@@ -79,8 +134,10 @@ function textRank(graph: Graph, damping = 0.85, maxIter = 100, tol = 1e-6): Map<
     return scores;
 }
 
-export function trExtractKeywords(text: string, topN = 5, windowSize = 2): string[] {
-    const words = tokenize(text);
+export function trExtractKeywords(text: string, topN = 5, windowSize = 2, language?: string): string[] {
+    const words = tokenize(text, language);
+    if (words.length === 0) return [];
+    
     const graph = buildGraph(words, windowSize);
     const scores = textRank(graph);
 
@@ -89,3 +146,5 @@ export function trExtractKeywords(text: string, topN = 5, windowSize = 2): strin
         .slice(0, topN)
         .map(([word]) => word);
 }
+
+export { detectLanguage };
