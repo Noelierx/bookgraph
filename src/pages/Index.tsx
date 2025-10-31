@@ -155,24 +155,23 @@ const Index = () => {
       });
       
       const { updatedBooks, newBooks } = processImportWithMerge(importedBooks, books);
-      if (newBooks.length === 0 && updatedBooks.length === books.length) {
+      setBooks(updatedBooks);
+
+      const addedCount = newBooks.length;
+      const mergedCount = importedBooks.length - newBooks.length;
+
+      if (addedCount === 0 && mergedCount === 0) {
         toast.info("All books from import already exist in your collection");
       } else {
-        setBooks(updatedBooks);
-        const addedCount = newBooks.length;
-        const mergedCount = updatedBooks.length - books.length - newBooks.length;
-        
         let message = '';
         if (addedCount > 0 && mergedCount > 0) {
           message = `Added ${addedCount} new books and merged ${mergedCount} duplicates`;
         } else if (addedCount > 0) {
           message = `Imported ${addedCount} new books`;
-        } else if (mergedCount > 0) {
-          message = `Merged ${mergedCount} books with existing collection`;
         } else {
-          message = "Collection updated successfully";
+          message = `Merged ${mergedCount} books with existing collection`;
         }
-        
+
         toast.success(message);
       }
     } catch (error) {
@@ -206,7 +205,7 @@ const Index = () => {
       setBooks(updatedBooks);
       
       const addedCount = newBooks.length;
-      const mergedCount = updatedBooks.length - books.length - newBooks.length;
+      const mergedCount = importedBooks.length - newBooks.length;
       
       let message = '';
       if (addedCount > 0 && mergedCount > 0) {

@@ -115,6 +115,7 @@ async function enrichWithOpenLibraryData(book: Book): Promise<Book> {
         };
       }
     } catch (error) {
+      console.error("Error during OpenLibrary enrichment:", error);
     }
   }
   
@@ -174,7 +175,6 @@ export const importGoodReadsCSV = (
         }
         
         const books: Book[] = [];
-        let skipped = 0;
         
         onProgress?.(0, goodReadsBooks.length, "Starting import...");
         
@@ -187,8 +187,6 @@ export const importGoodReadsCSV = (
           if (book) {
             const enrichedBook = await enrichWithOpenLibraryData(book);
             books.push(enrichedBook);
-          } else {
-            skipped++;
           }
         }
         onProgress?.(goodReadsBooks.length, goodReadsBooks.length, "Removing duplicates within import...");

@@ -169,26 +169,29 @@ export function processImportWithMerge(booksToImport: Book[], existingBooks: Boo
     
     if (duplicateResult.isDuplicate && duplicateResult.duplicateIndex !== undefined && duplicateResult.mergedBook) {
       updatedBooks[duplicateResult.duplicateIndex] = duplicateResult.mergedBook;
+      processedInImport.add(i);
     } else {
-      let foundInImportBatch = false;
+      const duplicateIndices: number[] = [];
+      let mergedBook = book;
+      
       for (let j = i + 1; j < booksToImport.length; j++) {
         if (processedInImport.has(j)) continue;
         
         const otherBook = booksToImport[j];
-        const internalDuplicateResult = findDuplicateBook(otherBook, [book]);
+        const internalDuplicateResult = findDuplicateBook(otherBook, [mergedBook]);
         
         if (internalDuplicateResult.isDuplicate && internalDuplicateResult.mergedBook) {
-          newBooks.push(internalDuplicateResult.mergedBook);
-          processedInImport.add(i);
-          processedInImport.add(j);
-          foundInImportBatch = true;
-          break;
+          mergedBook = internalDuplicateResult.mergedBook;
+          duplicateIndices.push(j);
         }
       }
       
-      if (!foundInImportBatch) {
-        newBooks.push(book);
-      }
+      // Mark all found duplicates as processed
+      processedInImport.add(i);
+      duplicateIndices.forEach(index => processedInImport.add(index));
+      
+      // Add the merged book (or original if no duplicates found)
+      newBooks.push(mergedBook);
     }
   }
   

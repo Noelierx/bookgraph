@@ -58,7 +58,7 @@ export default function HelpModal({ open, onClose }: HelpModalProps) {
                 <li><strong>Export:</strong> "Export" button to save your collection</li>
                 <li><strong>Import:</strong> "Import" button to restore a saved collection</li>
                 <li><strong>Format:</strong> Native BookGraph JSON file (.json)</li>
-                <li><strong>Effect:</strong> Replaces your current collection</li>
+                <li><strong>Effect:</strong> Merges with your current collection (does not replace)</li>
               </ul>
             </div>
             
