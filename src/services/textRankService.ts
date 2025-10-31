@@ -17,26 +17,28 @@ const stopWordsFr = new Set(['le', 'de', 'et', 'à', 'un', 'il', 'être', 'en', 
     'dans', 'ce', 'son', 'une', 'sur', 'avec', 'ne', 'se', 'pas', 'tout', 'plus', 'par', 'grand', 'comme',
     'autre', 'mais', 'ou', 'où', 'si', 'leur', 'y', 'dire', 'elle', 'depuis', 'car', 'deux', 'comment',
     'très', 'sans', 'nous', 'vous', 'lors', 'cette', 'celui', 'celle', 'ces', 'ceux', 'donc',
-    'bien', 'aussi', 'peut', 'fait', 'faire', 'voir', 'aller', 'venir', 'temps', 'même', 'encore'
+    'bien', 'aussi', 'peut', 'fait', 'faire', 'voir', 'aller', 'venir', 'temps', 'même', 'encore',
+    'été', 'déjà', 'là', 'après', 'dès', 'été', 'jusqu', 'plutôt', 'voilà'
 ]);
 
 const stopWordsEs = new Set(['el', 'la', 'de', 'que', 'y', 'a', 'en', 'un', 'ser', 'se', 'no', 'te', 'lo', 'le',
     'da', 'su', 'por', 'son', 'con', 'para', 'una', 'él', 'sobre', 'todo', 'las', 'más', 'si', 'al', 'del',
     'los', 'mi', 'pero', 'sus', 'me', 'hasta', 'donde', 'quien', 'desde', 'nos', 'durante', 'sin', 'muy',
-    'entre', 'cuando', 'ya', 'también', 'solo', 'antes', 'como', 'tanto', 'vez', 'mucho', 'ahora'
+    'entre', 'cuando', 'ya', 'también', 'solo', 'antes', 'como', 'tanto', 'vez', 'mucho', 'ahora',
+    'así', 'después', 'están', 'había', 'través', 'además', 'sólo', 'cómo', 'allí', 'días'
 ]);
 
 const stopWordsDe = new Set(['der', 'die', 'und', 'in', 'den', 'von', 'zu', 'das', 'mit', 'sich', 'des', 'auf',
     'für', 'ist', 'im', 'dem', 'nicht', 'ein', 'eine', 'als', 'auch', 'es', 'an', 'werden', 'aus', 'er', 'hat',
     'dass', 'sie', 'nach', 'wird', 'bei', 'einer', 'um', 'am', 'sind', 'noch', 'wie', 'einem', 'über', 'einen',
     'so', 'zum', 'war', 'haben', 'nur', 'oder', 'aber', 'vor', 'zur', 'bis', 'mehr', 'durch', 'man', 'sein',
-    'wurde', 'sei', 'ihren'
+    'wurde', 'sei', 'ihren', 'während', 'können', 'müssen', 'währen', 'größer', 'natürlich', 'tatsächlich'
 ]);
 
 function detectLanguage(text: string): 'en' | 'fr' | 'es' | 'de' | 'unknown' {
   if (!text || text.length < 50) return 'unknown';
   
-  const words = text.toLowerCase().match(/\b\w+\b/g) || [];
+  const words = text.toLowerCase().match(/\b[\p{L}\p{N}_]+\b/gu) || [];
   const sampleSize = Math.min(100, words.length);
   const sample = words.slice(0, sampleSize);
   
@@ -48,7 +50,7 @@ function detectLanguage(text: string): 'en' | 'fr' | 'es' | 'de' | 'unknown' {
   };
   
   const maxScore = Math.max(...Object.values(scores));
-  if (maxScore < 3) return 'unknown'; // Not enough confidence
+  if (maxScore < 3) return 'unknown';
   
   return Object.keys(scores).find(lang => scores[lang as keyof typeof scores] === maxScore) as 'en' | 'fr' | 'es' | 'de' || 'unknown';
 }
@@ -69,7 +71,7 @@ function tokenize(text: string, language?: string): string[] {
     
     return text
         .toLowerCase()
-        .replace(/[^a-z0-9\s]/g, "")
+        .replace(/[^\p{L}\p{N}\s]/gu, "")
         .split(/\s+/)
         .filter(w => w.length > 2 && !stopWords.has(w));
 }

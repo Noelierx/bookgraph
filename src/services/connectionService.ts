@@ -12,6 +12,9 @@ interface BookAnalysis {
 export async function analyzeBookConnections(books: Book[]): Promise<BookConnection[]> {
   const connections: BookConnection[] = [];
 
+  const bookMap = new Map<string, Book>();
+  books.forEach(book => bookMap.set(book.id, book));
+
   const extracts: BookAnalysis[] = books.map(b => {
     const text = b.description || "";
     const language = detectLanguage(text);
@@ -28,8 +31,8 @@ export async function analyzeBookConnections(books: Book[]): Promise<BookConnect
     for (let j = i + 1; j < englishBooks.length; j++) {
       const bookAnalysis1 = englishBooks[i];
       const bookAnalysis2 = englishBooks[j];
-      const book1 = books.find(b => b.id === bookAnalysis1.id)!;
-      const book2 = books.find(b => b.id === bookAnalysis2.id)!;
+      const book1 = bookMap.get(bookAnalysis1.id)!;
+      const book2 = bookMap.get(bookAnalysis2.id)!;
       
       const connection = analyzeBookPair(book1, book2, bookAnalysis1, bookAnalysis2, 1.0);
       if (connection) connections.push(connection);
@@ -38,8 +41,8 @@ export async function analyzeBookConnections(books: Book[]): Promise<BookConnect
 
   for (const engBook of englishBooks) {
     for (const otherBook of otherLanguageBooks) {
-      const book1 = books.find(b => b.id === engBook.id)!;
-      const book2 = books.find(b => b.id === otherBook.id)!;
+      const book1 = bookMap.get(engBook.id)!;
+      const book2 = bookMap.get(otherBook.id)!;
       
       const connection = analyzeBookPair(book1, book2, engBook, otherBook, 0.8);
       if (connection) connections.push(connection);
@@ -61,8 +64,8 @@ export async function analyzeBookConnections(books: Book[]): Promise<BookConnect
       for (let j = i + 1; j < languageBooks.length; j++) {
         const bookAnalysis1 = languageBooks[i];
         const bookAnalysis2 = languageBooks[j];
-        const book1 = books.find(b => b.id === bookAnalysis1.id)!;
-        const book2 = books.find(b => b.id === bookAnalysis2.id)!;
+        const book1 = bookMap.get(bookAnalysis1.id)!;
+        const book2 = bookMap.get(bookAnalysis2.id)!;
         
         const connection = analyzeBookPair(book1, book2, bookAnalysis1, bookAnalysis2, 0.9);
         if (connection) connections.push(connection);
@@ -102,13 +105,9 @@ function analyzeBookPair(
     const commonPlots = analysis1.plots.filter(p => analysis2.plots.includes(p));
 
     if (commonKeywords.length > 0) {
-      let keywordStrength = Math.min(commonKeywords.length * 0.12, 0.5);
-      
-      if (analysis1.language !== analysis2.language && analysis1.language !== 'unknown' && analysis2.language !== 'unknown') {
-        keywordStrength *= 1.2;
-      }
-      
+      const keywordStrength = Math.min(commonKeywords.length * 0.12, 0.5);
       strength += keywordStrength;
+      
       if (commonKeywords.length >= 2) {
         reasons.push(`Similar concepts: ${commonKeywords.slice(0, 3).join(", ")}`);
         types.push("similar-concepts");
