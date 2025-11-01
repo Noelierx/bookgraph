@@ -59,8 +59,11 @@ export function BookGraphD3({ data, onNodeClick, onVisibleTypesChange, width, he
       group: index % 5,
     }));
 
+    const nodeIds = new Set(nodes.map(node => node.id));
+
     const links: Link[] = data.links
       .filter((link) => visibleTypes.has(link.type || "similar-concepts"))
+      .filter((link) => nodeIds.has(link.source as string) && nodeIds.has(link.target as string))
       .map((link) => ({
         source: link.source,
         target: link.target,

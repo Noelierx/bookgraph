@@ -95,6 +95,9 @@ export function useBookManagement() {
 
   const handleRemoveBook = (bookId: string) => {
     setBooks(books.filter(b => b.id !== bookId));
+    setConnections(connections.filter(conn => 
+      conn.source !== bookId && conn.target !== bookId
+    ));
     setSelectedBookId(null);
     toast.success("Book removed");
   };
