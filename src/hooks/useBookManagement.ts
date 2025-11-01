@@ -46,6 +46,8 @@ export function useBookManagement() {
   useEffect(() => {
     if (books.length > 0) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
+    } else {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
     }
   }, [books]);
 
@@ -203,14 +205,14 @@ export function useBookManagement() {
     setImportProgress({ current: 0, total: 0, message: "Starting import..." });
     
     try {
-      toast.info("Importing GoodReads CSV... This may take a moment as we enrich the data.");
+      toast.info("Importing Goodreads CSV... This may take a moment as we enrich the data.");
       
       const importedBooks = await importGoodReadsCSV(file, (current, total, message) => {
         setImportProgress({ current, total, message });
       });
       
       if (importedBooks.length === 0) {
-        toast.error("No valid books found in the GoodReads export");
+        toast.error("No valid books found in the Goodreads export");
       } else {
         const { updatedBooks, newBooks } = processImportWithMerge(importedBooks, books);
         setBooks(updatedBooks);
@@ -222,11 +224,11 @@ export function useBookManagement() {
         if (addedCount > 0 && mergedCount > 0) {
           message = `Added ${addedCount} new books and merged ${mergedCount} duplicates from GoodReads`;
         } else if (addedCount > 0) {
-          message = `Imported ${addedCount} books from GoodReads`;
+          message = `Imported ${addedCount} books from Goodreads`;
         } else if (mergedCount > 0) {
           message = `Merged ${mergedCount} books with existing collection from GoodReads`;
         } else {
-          message = "No new books to import from GoodReads";
+          message = "No new books to import from Goodreads";
         }
         
         toast.success(message);

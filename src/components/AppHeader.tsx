@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { BookOpen, RefreshCw, Download, Upload, Info } from "lucide-react";
+import { Book } from "@/types/book";
 
 interface HeaderActionsProps {
-  books: any[];
+  books: Book[];
   isAnalyzing: boolean;
   isImportingJSON: boolean;
   onAnalyze: () => void;
@@ -65,7 +66,7 @@ interface AppHeaderProps {
   onExport: () => void;
   onImport: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onShowHelp: () => void;
-  books: any[];
+  books: Book[];
   isAnalyzing: boolean;
   isImportingJSON: boolean;
 }

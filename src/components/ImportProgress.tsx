@@ -19,7 +19,7 @@ export function ImportProgress({ isVisible, current, total, message, type }: Imp
         <div className="space-y-4">
           <div className="text-center">
             <h3 className="text-lg font-semibold">
-              {type === "goodreads" ? "Importing GoodReads CSV" : 
+              {type === "goodreads" ? "Importing Goodreads CSV" : 
                type === "json" ? "Importing JSON" : 
                "Analyzing & Enriching Books"}
             </h3>
@@ -38,7 +38,7 @@ export function ImportProgress({ isVisible, current, total, message, type }: Imp
           
           {type === "goodreads" && (
             <p className="text-xs text-muted-foreground text-center">
-              Enriching books with OpenLibrary data...
+              Enriching books data...
             </p>
           )}
         </div>

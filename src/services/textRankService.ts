@@ -104,7 +104,7 @@ function tokenize(text: string, language?: string): string[] {
         .toLowerCase()
         .replace(/[^\p{L}\p{N}\s]/gu, "")
         .split(/\s+/)
-        .filter(w => w.length > 5 && !stopWords.has(w));
+        .filter(w => w.length > 2 && !stopWords.has(w));
 }
 
 function buildGraph(words: string[], windowSize: number = 2): Graph {
@@ -178,4 +178,4 @@ export function trExtractKeywords(text: string, topN = 5, windowSize = 2, langua
         .map(([word]) => word);
 }
 
-export { detectLanguage };
+export { detectLanguage, getStopWords };

@@ -1,6 +1,14 @@
 import { Book } from "@/types/book";
+import { detectLanguage, getStopWords } from "./textRankService";
+
+const titleCache = new Map<string, string>();
+const authorCache = new Map<string, string>();
 
 export function normalizeTitle(title: string): string {
+  if (titleCache.has(title)) {
+    return titleCache.get(title)!;
+  }
+
   const normalized = title
     .toLowerCase()
     .normalize('NFD')
@@ -14,11 +22,19 @@ export function normalizeTitle(title: string): string {
     .replace(/\s+/g, ' ')
     .trim();
 
+  if (titleCache.size < 1000) {
+    titleCache.set(title, normalized);
+  }
+
   return normalized;
 }
 
 export function normalizeAuthor(author: string): string {
-  return author
+  if (authorCache.has(author)) {
+    return authorCache.get(author)!;
+  }
+
+  const normalized = author
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -26,6 +42,12 @@ export function normalizeAuthor(author: string): string {
     .replace(/\s+/g, ' ')
     .replace(/\s+(jr|sr|ii|iii|iv|md|phd)\.?$/i, '')
     .trim();
+
+  if (authorCache.size < 1000) {
+    authorCache.set(author, normalized);
+  }
+
+  return normalized;
 }
 
 export function areAuthorsSimilar(author1: string, author2: string): boolean {
@@ -62,35 +84,43 @@ export function areAuthorsSimilar(author1: string, author2: string): boolean {
 export function areTitlesSimilar(title1: string, title2: string): boolean {
   if (title1 === title2) return true;
   
-  const words1 = title1.split(' ').filter(w => w.length > 0);
-  const words2 = title2.split(' ').filter(w => w.length > 0);
+  const normalize = (str: string) => str
+    .replace(/[\(\)\[\]\{\}\-\:\;\,\.\!\?\"\']/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
   
-  if (title1.includes(title2) || title2.includes(title1)) return true;
+  const norm1 = normalize(title1);
+  const norm2 = normalize(title2);
   
-  const shorter = words1.length <= words2.length ? title1 : title2;
-  const longer = words1.length <= words2.length ? title2 : title1;
+  if (norm1 === norm2) return true;
+  
+  const words1 = norm1.split(' ').filter(w => w.length > 0);
+  const words2 = norm2.split(' ').filter(w => w.length > 0);
+  
+  const shorter = words1.length <= words2.length ? norm1 : norm2;
+  const longer = words1.length <= words2.length ? norm2 : norm1;
   
   if (longer.startsWith(shorter)) {
-    const remaining = longer.substring(shorter.length).trim();
-    if (remaining.match(/^[\s\-\:\.\,\;]/)) {
-      return true;
-    }
+    return true;
   }
   
   if (words1.length <= 2 || words2.length <= 2) {
-    return title1 === title2;
+    return norm1 === norm2;
   }
   
-  // For short titles (3 words), be more strict
-  if (words1.length <= 3 && words2.length <= 3) {
+  if (words1.length <= 4 && words2.length <= 4) {
     const commonWords = words1.filter(w => words2.includes(w));
     return commonWords.length >= Math.min(words1.length, words2.length) - 1;
   }
   
-  const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'of', 'in', 'on', 'at', 'to', 'for', 'with', 'by']);
+  const combinedText = `${norm1} ${norm2}`;
+  const language = detectLanguage(combinedText);
+  const stopWords = getStopWords(language);
   
-  const significantWords1 = words1.filter(w => w.length > 2 || !stopWords.has(w));
-  const significantWords2 = words2.filter(w => w.length > 2 || !stopWords.has(w));
+  const isSignificant = (w: string) => w.length > 2 && !stopWords.has(w.toLowerCase());
+  
+  const significantWords1 = words1.filter(isSignificant);
+  const significantWords2 = words2.filter(isSignificant);
   
   if (significantWords1.length === 0 || significantWords2.length === 0) return false;
   
@@ -229,27 +259,40 @@ export function removeDuplicatesFromImport(booksToImport: Book[], existingBooks:
   return result.newBooks;
 }
 
-export function removeDuplicatesFromList(books: Book[]): { uniqueBooks: Book[]; duplicatesCount: number } {
+export function removeDuplicatesFromList(books: Book[]): { 
+  uniqueBooks: Book[]; 
+  duplicatesCount: number; 
+  mergedGroups?: Array<{originalBooks: Book[], mergedBook: Book, reason: string}>
+} {
   const uniqueBooks: Book[] = [];
   const seenIds = new Set<string>();
   const seenIsbns = new Map<string, number>();
   const seenTitleAuthor = new Map<string, { title: string; author: string; index: number }>();
+  const mergedGroups: Array<{originalBooks: Book[], mergedBook: Book, reason: string}> = [];
   let duplicatesCount = 0;
 
   for (const book of books) {
     let isDuplicate = false;
+    let mergeReason = '';
+    let mergeTarget: Book | null = null;
+    let mergeTargetIndex = -1;
 
     if (seenIds.has(book.id)) {
       isDuplicate = true;
       duplicatesCount++;
+      mergeReason = 'Same ID';
     } else {
       seenIds.add(book.id);
 
       if (book.isbn && book.isbn.length >= 10) {
         const cleanIsbn = book.isbn.replace(/[^0-9X]/gi, '');
         if (seenIsbns.has(cleanIsbn)) {
+          const existingIndex = seenIsbns.get(cleanIsbn)!;
+          mergeTarget = uniqueBooks[existingIndex];
+          mergeTargetIndex = existingIndex;
           isDuplicate = true;
           duplicatesCount++;
+          mergeReason = 'Same ISBN';
         }
       }
 
@@ -257,18 +300,19 @@ export function removeDuplicatesFromList(books: Book[]): { uniqueBooks: Book[]; 
         const normalizedTitle = normalizeTitle(book.title);
         const normalizedAuthor = normalizeAuthor(book.author);
         
-        let foundSimilar = false;
         for (const [, existingData] of seenTitleAuthor.entries()) {
           if (areTitlesSimilar(normalizedTitle, existingData.title) && 
               areAuthorsSimilar(normalizedAuthor, existingData.author)) {
+            mergeTarget = uniqueBooks[existingData.index];
+            mergeTargetIndex = existingData.index;
             isDuplicate = true;
             duplicatesCount++;
-            foundSimilar = true;
+            mergeReason = 'Similar title and author';
             break;
           }
         }
         
-        if (!foundSimilar) {
+        if (!isDuplicate) {
           uniqueBooks.push(book);
           const currentIndex = uniqueBooks.length - 1;
           
@@ -286,15 +330,28 @@ export function removeDuplicatesFromList(books: Book[]): { uniqueBooks: Book[]; 
         }
       }
     }
+
+    if (isDuplicate && mergeTarget && mergeTargetIndex >= 0) {
+      const mergedBook = mergeBookData(mergeTarget, book);
+      uniqueBooks[mergeTargetIndex] = mergedBook;
+      
+      mergedGroups.push({
+        originalBooks: [mergeTarget, book],
+        mergedBook,
+        reason: mergeReason
+      });
+    }
   }
 
-  return { uniqueBooks, duplicatesCount };
+  return { uniqueBooks, duplicatesCount, mergedGroups };
 }
 
-/**
- * Enhanced deduplication with centralized enrichment
- */
-export async function removeDuplicatesWithEnrichment(books: Book[]): Promise<{uniqueBooks: Book[], duplicatesCount: number}> {
+
+export async function removeDuplicatesWithEnrichment(books: Book[]): Promise<{
+  uniqueBooks: Book[], 
+  duplicatesCount: number,
+  mergedGroups?: Array<{originalBooks: Book[], mergedBook: Book, reason: string}>
+}> {
   const result = removeDuplicatesFromList(books);
   
   const { enrichBookCollection } = await import("./enrichmentService");
@@ -302,6 +359,20 @@ export async function removeDuplicatesWithEnrichment(books: Book[]): Promise<{un
   
   return {
     uniqueBooks: enrichedBooks,
-    duplicatesCount: result.duplicatesCount
+    duplicatesCount: result.duplicatesCount,
+    mergedGroups: result.mergedGroups
   };
+}
+
+export function removeDuplicatesOnly(books: Book[]): {
+  uniqueBooks: Book[], 
+  duplicatesCount: number,
+  mergedGroups?: Array<{originalBooks: Book[], mergedBook: Book, reason: string}>
+} {
+  return removeDuplicatesFromList(books);
+}
+
+export function clearNormalizationCaches(): void {
+  titleCache.clear();
+  authorCache.clear();
 }

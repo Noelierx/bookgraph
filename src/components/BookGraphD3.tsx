@@ -51,12 +51,6 @@ export function BookGraphD3({ data, onNodeClick, onVisibleTypesChange, width, he
   const [visibleTypes, setVisibleTypes] = useState<Set<RelationshipType>>(
     new Set(["similar-themes", "similar-plots", "similar-concepts", "common-subjects"])
   );
-  
-  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
-
-  const handleNodeHover = useCallback((nodeId: string | null) => {
-    setHoveredNode(nodeId);
-  }, []);
 
   const { nodes, links } = useMemo(() => {
     const nodes: Node[] = data.nodes.map((node, index) => ({
@@ -117,7 +111,7 @@ export function BookGraphD3({ data, onNodeClick, onVisibleTypesChange, width, he
       .data(nodes)
       .enter().append("g");
 
-    const circles = node.append("circle")
+    node.append("circle")
       .attr("r", 8)
       .attr("fill", "#6366f1")
       .attr("stroke", "#fff")
@@ -130,10 +124,6 @@ export function BookGraphD3({ data, onNodeClick, onVisibleTypesChange, width, he
       .on("mouseenter", (event, d) => {
         d3.select(event.currentTarget).attr("r", 10);
         
-        requestAnimationFrame(() => {
-          handleNodeHover(d.id);
-        });
-        
         if (tooltipRef.current) {
           const book = data.nodes.find(n => n.id === d.id)?.book;
           if (book) {
@@ -145,16 +135,12 @@ export function BookGraphD3({ data, onNodeClick, onVisibleTypesChange, width, he
       .on("mouseleave", (event, d) => {
         d3.select(event.currentTarget).attr("r", 8);
         
-        requestAnimationFrame(() => {
-          handleNodeHover(null);
-        });
-        
         if (tooltipRef.current) {
           tooltipRef.current.style.display = 'none';
         }
       });
 
-    const labels = node.append("text")
+    node.append("text")
       .attr("dy", 20)
       .attr("text-anchor", "middle")
       .style("font-size", "10px")
@@ -199,7 +185,7 @@ export function BookGraphD3({ data, onNodeClick, onVisibleTypesChange, width, he
       simulation.stop();
     };
 
-  }, [nodes, links, size, onNodeClick, data.nodes, handleNodeHover]);
+  }, [nodes, links, size, onNodeClick, data.nodes]);
 
   const toggleType = (type: RelationshipType) => {
     setVisibleTypes((prev) => {

@@ -145,8 +145,13 @@ function mergeGoogleBooksData(existingBook: Book, googleBook: Book): Book {
     title: googleBook.title.length > existingBook.title.length ? googleBook.title : existingBook.title,
     author: (googleBook.author && googleBook.author !== "Unknown Author" && googleBook.author.length > existingBook.author.length) 
       ? googleBook.author : existingBook.author,
-    isbn: (!existingBook.isbn || googleBook.isbn.length > existingBook.isbn.length) 
-      ? googleBook.isbn : existingBook.isbn,
+    isbn: (() => {
+      const incoming = googleBook.isbn?.trim() ?? "";
+      const existing = existingBook.isbn?.trim() ?? "";
+      if (!existing && incoming) return incoming;
+      if (incoming.length > existing.length) return incoming;
+      return existingBook.isbn;
+    })(),
     description: !existingBook.description && googleBook.description 
       ? googleBook.description : existingBook.description,
     publishYear: !existingBook.publishYear && googleBook.publishYear 

@@ -2,9 +2,6 @@ import { Book } from "@/types/book";
 
 const OPEN_LIBRARY_API = "https://openlibrary.org";
 
-/* -----------------------------------------
-   Helpers réseau / parsing
-   ----------------------------------------- */
 async function fetchJson(path: string): Promise<any | null> {
   try {
     const url = path.startsWith("http") ? path : `${OPEN_LIBRARY_API}${path}.json`;
@@ -23,9 +20,6 @@ function extractDescriptionFromData(desc: any): string {
   return "";
 }
 
-/* -----------------------------------------
-   Helpers ISBN (nettoyage / validation / conversion)
-   ----------------------------------------- */
 function cleanIsbnRaw(input: any): string | null {
   if (!input) return null;
   const val = Array.isArray(input) ? input[0] : input;
@@ -91,7 +85,6 @@ function pickFirstIsbn(...sources: any[]): string {
     }
   }
 
-  // prefer isbn13
   for (const raw of collected) {
     const c = cleanIsbnRaw(raw);
     if (!c) continue;
@@ -115,9 +108,6 @@ function pickFirstIsbn(...sources: any[]): string {
   return "";
 }
 
-/* -----------------------------------------
-   Mapping helpers
-   ----------------------------------------- */
 function mapSearchResult(doc: any): Book {
   const isbn = pickFirstIsbn(doc.isbn, doc.isbn_13, doc.isbn_10);
   return {
@@ -148,9 +138,6 @@ function mapOpenLibraryBook(data: any): Book {
   };
 }
 
-/* -----------------------------------------
-   Enrichissement: edition -> work -> editions list
-   ----------------------------------------- */
 async function getEditionsForWork(workKey: string, limit = 10): Promise<any[]> {
   const path = `${workKey}/editions.json?limit=${limit}`;
   const data = await fetchJson(path);
@@ -197,9 +184,6 @@ async function enrichFromEditionOrWork(book: Book, doc: any): Promise<Book> {
   return enriched;
 }
 
-/* -----------------------------------------
-   API: searchBooks + getBookDescription
-   ----------------------------------------- */
 export async function searchBooks(query: string, searchType: "title" | "author" | "isbn"): Promise<Book[]> {
   try {
     if (searchType === "isbn") {

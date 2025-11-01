@@ -12,7 +12,7 @@ Search, collect, analyze, and visualize how your favorite reads relate to one an
 - 🔎 **Search books** by *title*, *author*, or *ISBN* using **OpenLibrary** and **Google Books APIs**.  
 - 🧠 **Intelligent enrichment**: automatically fetches descriptions, subjects, categories, and ISBNs from multiple sources (preferring ISBN-13).  
 - ✅ **Validation**: ISBN required for manual additions.  
-- 🕸️ **Interactive graph** powered by *ForceGraph2D* — fully responsive with drag / zoom / pan.  
+- 🕸️ **Interactive graph** powered by *D3* — fully responsive with drag / zoom / pan.  
 - 📖 **Book details** with ISBN, subjects, and description — includes *Edit* / *Delete*.  
 - 💾 **Import / Export** your collection as JSON.  
 - 📚 **Goodreads Import** from CSV exports with automatic enrichment.  
@@ -84,7 +84,7 @@ BookGraph supports importing your Goodreads library via CSV export:
 
 | Component | Purpose |
 |------------|----------|
-| `BookGraph.tsx` | Responsive ForceGraph2D visualization |
+| `BookGraphD3.tsx` | Responsive D3 visualization |
 | `HelpModal.tsx` | Reusable modal with improvement tips |
 | `EditBookDialog.tsx` | Add/edit dialog with ISBN validation |
 | `BookDetails.tsx` | Displays ISBN, subjects, and description |
