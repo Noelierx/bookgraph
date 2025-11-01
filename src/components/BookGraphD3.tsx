@@ -226,7 +226,7 @@ export function BookGraphD3({ data, onNodeClick, onVisibleTypesChange, width, he
   return (
     <div
       ref={wrapperRef}
-      className="relative w-full h-full min-h-[400px] bg-slate-900 rounded-lg overflow-hidden border border-border"
+      className="relative w-full h-full min-h-[400px] rounded-lg overflow-hidden border border-border"
     >
       <svg
         ref={svgRef}
