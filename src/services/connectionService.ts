@@ -1,5 +1,6 @@
 import { Book, BookConnection, RelationshipType } from "@/types/book";
 import { trExtractKeywords, detectLanguage } from "./textRankService";
+import { enrichBook } from "./enrichmentService";
 
 interface BookAnalysis {
   id: string;
@@ -7,6 +8,38 @@ interface BookAnalysis {
   keywords: string[];
   themes: string[];
   plots: string[];
+}
+
+export async function analyzeBookConnectionsWithEnrichment(
+  books: Book[], 
+  onProgress?: (current: number, total: number, message: string) => void
+): Promise<{ connections: BookConnection[], enrichedBooks: Book[] }> {
+  const enrichedBooks: Book[] = [];
+  
+  for (let i = 0; i < books.length; i++) {
+    const book = books[i];
+    onProgress?.(i + 1, books.length, `Enriching "${book.title}"...`);
+    
+    try {
+      if (!book.description || !book.subjects?.length || !book.coverUrl) {
+        const enrichedBook = await enrichBook(book);
+        enrichedBooks.push(enrichedBook);
+      } else {
+        enrichedBooks.push(book);
+      }
+    } catch (error) {
+      console.error(`Error enriching book "${book.title}":`, error);
+      enrichedBooks.push(book);
+    }
+    
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  
+  onProgress?.(books.length, books.length, "Analyzing connections...");
+  
+  const connections = await analyzeBookConnections(enrichedBooks);
+  
+  return { connections, enrichedBooks };
 }
 
 export async function analyzeBookConnections(books: Book[]): Promise<BookConnection[]> {
@@ -76,6 +109,34 @@ export async function analyzeBookConnections(books: Book[]): Promise<BookConnect
   return connections;
 }
 
+function getSpecificSubjects(subjects: string[]): string[] {
+  const specificSubjects: string[] = [];
+  
+  for (const subject of subjects) {
+    const normalized = subject.toLowerCase().trim();
+    
+    if (isGenericSubject(subject)) {
+      continue;
+    }
+    
+    if (normalized.includes('fiction') && normalized !== 'fiction') {
+      specificSubjects.push(subject);
+    } else if (normalized.includes('literature') && normalized !== 'literature') {
+      specificSubjects.push(subject);
+    } else if (normalized.length > 3 && !normalized.match(/^\d+$/)) {
+      specificSubjects.push(subject);
+    }
+  }
+  
+  return specificSubjects;
+}
+
+function isGenericSubject(subject: string): boolean {
+  const normalized = subject.toLowerCase().trim();
+  return normalized.length < 3 ||
+         /^\d+$/.test(normalized);
+}
+
 function analyzeBookPair(
   book1: Book, 
   book2: Book, 
@@ -89,12 +150,19 @@ function analyzeBookPair(
   
   let commonSubjects: string[] = [];
   if (book1.subjects && book2.subjects && book1.subjects.length > 0 && book2.subjects.length > 0) {
-    commonSubjects = book1.subjects.filter(s => 
-      book2.subjects?.some(s2 => s.toLowerCase() === s2.toLowerCase())
+    const specificSubjects1 = getSpecificSubjects(book1.subjects);
+    const specificSubjects2 = getSpecificSubjects(book2.subjects);
+    
+    commonSubjects = specificSubjects1.filter(s => 
+      specificSubjects2.some(s2 => s.toLowerCase() === s2.toLowerCase())
     );
+    
     if (commonSubjects.length > 0) {
-      strength += Math.min(commonSubjects.length * 0.3, 0.7);
-      reasons.push(`Common subjects: ${commonSubjects.slice(0, 3).join(", ")}`);
+      strength += Math.min(commonSubjects.length * 0.2, 0.5);
+      const subjectList = commonSubjects.length > 4 
+        ? `${commonSubjects.slice(0, 4).join(", ")} (and ${commonSubjects.length - 4} more)`
+        : commonSubjects.join(", ");
+      reasons.push(`Common subjects (${commonSubjects.length}): ${subjectList}`);
       types.push("common-subjects");
     }
   }
@@ -109,20 +177,29 @@ function analyzeBookPair(
       strength += keywordStrength;
       
       if (commonKeywords.length >= 2) {
-        reasons.push(`Similar concepts: ${commonKeywords.slice(0, 3).join(", ")}`);
+        const keywordList = commonKeywords.length > 4 
+          ? `${commonKeywords.slice(0, 4).join(", ")} (and ${commonKeywords.length - 4} more)`
+          : commonKeywords.join(", ");
+        reasons.push(`Similar concepts (${commonKeywords.length}): ${keywordList}`);
         types.push("similar-concepts");
       }
     }
     
     if (commonThemes.length > 0) {
       strength += Math.min(commonThemes.length * 0.25, 0.6);
-      reasons.push(`Common themes: ${commonThemes.slice(0, 2).join(", ")}`);
+      const themeList = commonThemes.length > 3 
+        ? `${commonThemes.slice(0, 3).join(", ")} (and ${commonThemes.length - 3} more)`
+        : commonThemes.join(", ");
+      reasons.push(`Common themes (${commonThemes.length}): ${themeList}`);
       types.push("similar-themes");
     }
     
     if (commonPlots.length > 0) {
       strength += Math.min(commonPlots.length * 0.2, 0.5);
-      reasons.push(`Similar plot elements: ${commonPlots.slice(0, 2).join(", ")}`);
+      const plotList = commonPlots.length > 3 
+        ? `${commonPlots.slice(0, 3).join(", ")} (and ${commonPlots.length - 3} more)`
+        : commonPlots.join(", ");
+      reasons.push(`Similar plot elements (${commonPlots.length}): ${plotList}`);
       types.push("similar-plots");
     }
   }
@@ -137,7 +214,44 @@ function analyzeBookPair(
   }
   
   if (strength > 0.1 && reasons.length > 0) {
-    const connectionType: RelationshipType = types.length === 1 ? types[0] : "mixed";
+    let connectionType: RelationshipType;
+    
+    if (types.length === 1) {
+      connectionType = types[0];
+    } else if (types.length >= 2) {
+      const typeStrengths = new Map<RelationshipType, number>();
+      
+      if (types.includes("common-subjects") && commonSubjects.length > 0) {
+        typeStrengths.set("common-subjects", Math.min(commonSubjects.length * 0.2, 0.5));
+      }
+      if (types.includes("similar-themes") && book1.description && book2.description) {
+        const commonThemes = analysis1.themes.filter(t => analysis2.themes.includes(t));
+        typeStrengths.set("similar-themes", Math.min(commonThemes.length * 0.25, 0.6));
+      }
+      if (types.includes("similar-concepts") && book1.description && book2.description) {
+        const commonKeywords = analysis1.keywords.filter(k => analysis2.keywords.includes(k));
+        typeStrengths.set("similar-concepts", Math.min(commonKeywords.length * 0.12, 0.5));
+      }
+      if (types.includes("similar-plots") && book1.description && book2.description) {
+        const commonPlots = analysis1.plots.filter(p => analysis2.plots.includes(p));
+        typeStrengths.set("similar-plots", Math.min(commonPlots.length * 0.2, 0.5));
+      }
+      
+      let maxStrength = 0;
+      let dominantType: RelationshipType = types[0];
+      
+      for (const [type, str] of typeStrengths) {
+        if (str > maxStrength) {
+          maxStrength = str;
+          dominantType = type;
+        }
+      }
+      
+      connectionType = dominantType;
+    } else {
+      connectionType = "similar-concepts";
+    }
+    
     return {
       source: book1.id,
       target: book2.id,
@@ -153,60 +267,60 @@ function analyzeBookPair(
 function extractThemes(text: string, language: string = 'en'): string[] {
   const themePatterns = {
     en: [
-      /\b(love|romance|relationship|family|friendship|loyalty|betrayal)\b/gi,
-      /\b(war|battle|conflict|fight|struggle|violence|peace)\b/gi,
-      /\b(mystery|detective|crime|murder|investigation|thriller)\b/gi,
-      /\b(magic|fantasy|wizard|dragon|quest|adventure|journey)\b/gi,
-      /\b(science|technology|space|future|robot|alien|time)\b/gi,
-      /\b(horror|fear|terror|ghost|monster|supernatural|dark)\b/gi,
-      /\b(power|politics|king|queen|empire|throne|rule)\b/gi,
-      /\b(death|life|survival|hope|loss|grief|rebirth)\b/gi,
-      /\b(identity|self|memory|past|secret|truth|lie)\b/gi,
-      /\b(society|culture|class|revolution|rebellion|freedom)\b/gi,
-      /\b(nature|world|earth|environment|animal|wild)\b/gi,
-      /\b(religion|god|faith|belief|spiritual|divine)\b/gi,
+      /(?<!\S)(love|romance|relationship|family|friendship|loyalty|betrayal)(?=\s|$)/giu,
+      /(?<!\S)(war|battle|conflict|fight|struggle|violence|peace)(?=\s|$)/giu,
+      /(?<!\S)(mystery|detective|crime|murder|investigation|thriller)(?=\s|$)/giu,
+      /(?<!\S)(magic|fantasy|wizard|dragon|quest|adventure|journey)(?=\s|$)/giu,
+      /(?<!\S)(science|technology|space|future|robot|alien|time)(?=\s|$)/giu,
+      /(?<!\S)(horror|fear|terror|ghost|monster|supernatural|dark)(?=\s|$)/giu,
+      /(?<!\S)(power|politics|king|queen|empire|throne|rule)(?=\s|$)/giu,
+      /(?<!\S)(death|life|survival|hope|loss|grief|rebirth)(?=\s|$)/giu,
+      /(?<!\S)(identity|self|memory|past|secret|truth|lie)(?=\s|$)/giu,
+      /(?<!\S)(society|culture|class|revolution|rebellion|freedom)(?=\s|$)/giu,
+      /(?<!\S)(nature|world|earth|environment|animal|wild)(?=\s|$)/giu,
+      /(?<!\S)(religion|god|faith|belief|spiritual|divine)(?=\s|$)/giu,
     ],
     fr: [
-      /\b(amour|romance|relation|famille|amitié|loyauté|trahison)\b/gi,
-      /\b(guerre|bataille|conflit|combat|lutte|violence|paix)\b/gi,
-      /\b(mystère|détective|crime|meurtre|enquête|thriller)\b/gi,
-      /\b(magie|fantaisie|sorcier|dragon|quête|aventure|voyage)\b/gi,
-      /\b(science|technologie|espace|futur|robot|alien|temps)\b/gi,
-      /\b(horreur|peur|terreur|fantôme|monstre|surnaturel|sombre)\b/gi,
-      /\b(pouvoir|politique|roi|reine|empire|trône|règne)\b/gi,
-      /\b(mort|vie|survie|espoir|perte|deuil|renaissance)\b/gi,
-      /\b(identité|soi|mémoire|passé|secret|vérité|mensonge)\b/gi,
-      /\b(société|culture|classe|révolution|rébellion|liberté)\b/gi,
-      /\b(nature|monde|terre|environnement|animal|sauvage)\b/gi,
-      /\b(religion|dieu|foi|croyance|spirituel|divin)\b/gi,
+      /(?<!\S)(amour|romance|relation|famille|amitié|loyauté|trahison)(?=\s|$)/giu,
+      /(?<!\S)(guerre|bataille|conflit|combat|lutte|violence|paix)(?=\s|$)/giu,
+      /(?<!\S)(mystère|détective|crime|meurtre|enquête|thriller)(?=\s|$)/giu,
+      /(?<!\S)(magie|fantaisie|sorcier|dragon|quête|aventure|voyage)(?=\s|$)/giu,
+      /(?<!\S)(science|technologie|espace|futur|robot|alien|temps)(?=\s|$)/giu,
+      /(?<!\S)(horreur|peur|terreur|fantôme|monstre|surnaturel|sombre)(?=\s|$)/giu,
+      /(?<!\S)(pouvoir|politique|roi|reine|empire|trône|règne)(?=\s|$)/giu,
+      /(?<!\S)(mort|vie|survie|espoir|perte|deuil|renaissance)(?=\s|$)/giu,
+      /(?<!\S)(identité|soi|mémoire|passé|secret|vérité|mensonge)(?=\s|$)/giu,
+      /(?<!\S)(société|culture|classe|révolution|rébellion|liberté)(?=\s|$)/giu,
+      /(?<!\S)(nature|monde|terre|environnement|animal|sauvage)(?=\s|$)/giu,
+      /(?<!\S)(religion|dieu|foi|croyance|spirituel|divin)(?=\s|$)/giu,
     ],
     es: [
-      /\b(amor|romance|relación|familia|amistad|lealtad|traición)\b/gi,
-      /\b(guerra|batalla|conflicto|lucha|violencia|paz)\b/gi,
-      /\b(misterio|detective|crimen|asesinato|investigación|thriller)\b/gi,
-      /\b(magia|fantasía|mago|dragón|búsqueda|aventura|viaje)\b/gi,
-      /\b(ciencia|tecnología|espacio|futuro|robot|alien|tiempo)\b/gi,
-      /\b(horror|miedo|terror|fantasma|monstruo|sobrenatural|oscuro)\b/gi,
-      /\b(poder|política|rey|reina|imperio|trono|gobierno)\b/gi,
-      /\b(muerte|vida|supervivencia|esperanza|pérdida|duelo|renacimiento)\b/gi,
-      /\b(identidad|yo|memoria|pasado|secreto|verdad|mentira)\b/gi,
-      /\b(sociedad|cultura|clase|revolución|rebelión|libertad)\b/gi,
-      /\b(naturaleza|mundo|tierra|ambiente|animal|salvaje)\b/gi,
-      /\b(religión|dios|fe|creencia|espiritual|divino)\b/gi,
+      /(?<!\S)(amor|romance|relación|familia|amistad|lealtad|traición)(?=\s|$)/giu,
+      /(?<!\S)(guerra|batalla|conflicto|lucha|violencia|paz)(?=\s|$)/giu,
+      /(?<!\S)(misterio|detective|crimen|asesinato|investigación|thriller)(?=\s|$)/giu,
+      /(?<!\S)(magia|fantasía|mago|dragón|búsqueda|aventura|viaje)(?=\s|$)/giu,
+      /(?<!\S)(ciencia|tecnología|espacio|futuro|robot|alien|tiempo)(?=\s|$)/giu,
+      /(?<!\S)(horror|miedo|terror|fantasma|monstruo|sobrenatural|oscuro)(?=\s|$)/giu,
+      /(?<!\S)(poder|política|rey|reina|imperio|trono|gobierno)(?=\s|$)/giu,
+      /(?<!\S)(muerte|vida|supervivencia|esperanza|pérdida|duelo|renacimiento)(?=\s|$)/giu,
+      /(?<!\S)(identidad|yo|memoria|pasado|secreto|verdad|mentira)(?=\s|$)/giu,
+      /(?<!\S)(sociedad|cultura|clase|revolución|rebelión|libertad)(?=\s|$)/giu,
+      /(?<!\S)(naturaleza|mundo|tierra|ambiente|animal|salvaje)(?=\s|$)/giu,
+      /(?<!\S)(religión|dios|fe|creencia|espiritual|divino)(?=\s|$)/giu,
     ],
     de: [
-      /\b(liebe|romantik|beziehung|familie|freundschaft|loyalität|verrat)\b/gi,
-      /\b(krieg|schlacht|konflikt|kampf|gewalt|frieden)\b/gi,
-      /\b(mysterium|detektiv|verbrechen|mord|ermittlung|thriller)\b/gi,
-      /\b(magie|fantasie|zauberer|drache|quest|abenteuer|reise)\b/gi,
-      /\b(wissenschaft|technologie|raum|zukunft|roboter|alien|zeit)\b/gi,
-      /\b(horror|angst|terror|geist|monster|übernatürlich|dunkel)\b/gi,
-      /\b(macht|politik|könig|königin|reich|thron|herrschaft)\b/gi,
-      /\b(tod|leben|überleben|hoffnung|verlust|trauer|wiedergeburt)\b/gi,
-      /\b(identität|selbst|erinnerung|vergangenheit|geheimnis|wahrheit|lüge)\b/gi,
-      /\b(gesellschaft|kultur|klasse|revolution|rebellion|freiheit)\b/gi,
-      /\b(natur|welt|erde|umwelt|tier|wild)\b/gi,
-      /\b(religion|gott|glaube|spirituell|göttlich)\b/gi,
+      /(?<!\S)(liebe|romantik|beziehung|familie|freundschaft|loyalität|verrat)(?=\s|$)/giu,
+      /(?<!\S)(krieg|schlacht|konflikt|kampf|gewalt|frieden)(?=\s|$)/giu,
+      /(?<!\S)(mysterium|detektiv|verbrechen|mord|ermittlung|thriller)(?=\s|$)/giu,
+      /(?<!\S)(magie|fantasie|zauberer|drache|quest|abenteuer|reise)(?=\s|$)/giu,
+      /(?<!\S)(wissenschaft|technologie|raum|zukunft|roboter|alien|zeit)(?=\s|$)/giu,
+      /(?<!\S)(horror|angst|terror|geist|monster|übernatürlich|dunkel)(?=\s|$)/giu,
+      /(?<!\S)(macht|politik|könig|königin|reich|thron|herrschaft)(?=\s|$)/giu,
+      /(?<!\S)(tod|leben|überleben|hoffnung|verlust|trauer|wiedergeburt)(?=\s|$)/giu,
+      /(?<!\S)(identität|selbst|erinnerung|vergangenheit|geheimnis|wahrheit|lüge)(?=\s|$)/giu,
+      /(?<!\S)(gesellschaft|kultur|klasse|revolution|rebellion|freiheit)(?=\s|$)/giu,
+      /(?<!\S)(natur|welt|erde|umwelt|tier|wild)(?=\s|$)/giu,
+      /(?<!\S)(religion|gott|glaube|spirituell|göttlich)(?=\s|$)/giu,
     ]
   };
   
@@ -227,60 +341,60 @@ function extractThemes(text: string, language: string = 'en'): string[] {
 function extractPlotElements(text: string, language: string = 'en'): string[] {
   const plotPatterns = {
     en: [
-      /\b(journey|quest|mission|adventure|voyage|expedition)\b/gi,
-      /\b(discovery|revelation|secret|mystery|truth)\b/gi,
-      /\b(conflict|struggle|fight|battle|war|confrontation)\b/gi,
-      /\b(escape|rescue|save|protect|defend)\b/gi,
-      /\b(revenge|betrayal|deception|conspiracy|plot)\b/gi,
-      /\b(transformation|change|growth|development|evolution)\b/gi,
-      /\b(sacrifice|loss|redemption|forgiveness)\b/gi,
-      /\b(romance|love|relationship|marriage|affair)\b/gi,
-      /\b(investigation|detective|crime|murder|mystery)\b/gi,
-      /\b(survival|danger|threat|peril|risk)\b/gi,
-      /\b(power|throne|kingdom|empire|rule|reign)\b/gi,
-      /\b(rebellion|revolution|uprising|resistance)\b/gi,
+      /(?<!\S)(journey|quest|mission|adventure|voyage|expedition)(?=\s|$)/giu,
+      /(?<!\S)(discovery|revelation|secret|mystery|truth)(?=\s|$)/giu,
+      /(?<!\S)(conflict|struggle|fight|battle|war|confrontation)(?=\s|$)/giu,
+      /(?<!\S)(escape|rescue|save|protect|defend)(?=\s|$)/giu,
+      /(?<!\S)(revenge|betrayal|deception|conspiracy|plot)(?=\s|$)/giu,
+      /(?<!\S)(transformation|change|growth|development|evolution)(?=\s|$)/giu,
+      /(?<!\S)(sacrifice|loss|redemption|forgiveness)(?=\s|$)/giu,
+      /(?<!\S)(romance|love|relationship|marriage|affair)(?=\s|$)/giu,
+      /(?<!\S)(investigation|detective|crime|murder|mystery)(?=\s|$)/giu,
+      /(?<!\S)(survival|danger|threat|peril|risk)(?=\s|$)/giu,
+      /(?<!\S)(power|throne|kingdom|empire|rule|reign)(?=\s|$)/giu,
+      /(?<!\S)(rebellion|revolution|uprising|resistance)(?=\s|$)/giu,
     ],
     fr: [
-      /\b(voyage|quête|mission|aventure|expédition)\b/gi,
-      /\b(découverte|révélation|secret|mystère|vérité)\b/gi,
-      /\b(conflit|lutte|combat|bataille|guerre|confrontation)\b/gi,
-      /\b(évasion|sauvetage|sauver|protéger|défendre)\b/gi,
-      /\b(vengeance|trahison|tromperie|conspiration|complot)\b/gi,
-      /\b(transformation|changement|croissance|développement|évolution)\b/gi,
-      /\b(sacrifice|perte|rédemption|pardon)\b/gi,
-      /\b(romance|amour|relation|mariage|liaison)\b/gi,
-      /\b(enquête|détective|crime|meurtre|mystère)\b/gi,
-      /\b(survie|danger|menace|péril|risque)\b/gi,
-      /\b(pouvoir|trône|royaume|empire|règne)\b/gi,
-      /\b(rébellion|révolution|soulèvement|résistance)\b/gi,
+      /(?<!\S)(voyage|quête|mission|aventure|expédition)(?=\s|$)/giu,
+      /(?<!\S)(découverte|révélation|secret|mystère|vérité)(?=\s|$)/giu,
+      /(?<!\S)(conflit|lutte|combat|bataille|guerre|confrontation)(?=\s|$)/giu,
+      /(?<!\S)(évasion|sauvetage|sauver|protéger|défendre)(?=\s|$)/giu,
+      /(?<!\S)(vengeance|trahison|tromperie|conspiration|complot)(?=\s|$)/giu,
+      /(?<!\S)(transformation|changement|croissance|développement|évolution)(?=\s|$)/giu,
+      /(?<!\S)(sacrifice|perte|rédemption|pardon)(?=\s|$)/giu,
+      /(?<!\S)(romance|amour|relation|mariage|liaison)(?=\s|$)/giu,
+      /(?<!\S)(enquête|détective|crime|meurtre|mystère)(?=\s|$)/giu,
+      /(?<!\S)(survie|danger|menace|péril|risque)(?=\s|$)/giu,
+      /(?<!\S)(pouvoir|trône|royaume|empire|règne)(?=\s|$)/giu,
+      /(?<!\S)(rébellion|révolution|soulèvement|résistance)(?=\s|$)/giu,
     ],
     es: [
-      /\b(viaje|búsqueda|misión|aventura|expedición)\b/gi,
-      /\b(descubrimiento|revelación|secreto|misterio|verdad)\b/gi,
-      /\b(conflicto|lucha|pelea|batalla|guerra|confrontación)\b/gi,
-      /\b(escape|rescate|salvar|proteger|defender)\b/gi,
-      /\b(venganza|traición|engaño|conspiración|complot)\b/gi,
-      /\b(transformación|cambio|crecimiento|desarrollo|evolución)\b/gi,
-      /\b(sacrificio|pérdida|redención|perdón)\b/gi,
-      /\b(romance|amor|relación|matrimonio|aventura)\b/gi,
-      /\b(investigación|detective|crimen|asesinato|misterio)\b/gi,
-      /\b(supervivencia|peligro|amenaza|riesgo)\b/gi,
-      /\b(poder|trono|reino|imperio|reinado)\b/gi,
-      /\b(rebelión|revolución|levantamiento|resistencia)\b/gi,
+      /(?<!\S)(viaje|búsqueda|misión|aventura|expedición)(?=\s|$)/giu,
+      /(?<!\S)(descubrimiento|revelación|secreto|misterio|verdad)(?=\s|$)/giu,
+      /(?<!\S)(conflicto|lucha|pelea|batalla|guerra|confrontación)(?=\s|$)/giu,
+      /(?<!\S)(escape|rescate|salvar|proteger|defender)(?=\s|$)/giu,
+      /(?<!\S)(venganza|traición|engaño|conspiración|complot)(?=\s|$)/giu,
+      /(?<!\S)(transformación|cambio|crecimiento|desarrollo|evolución)(?=\s|$)/giu,
+      /(?<!\S)(sacrificio|pérdida|redención|perdón)(?=\s|$)/giu,
+      /(?<!\S)(romance|amor|relación|matrimonio|aventura)(?=\s|$)/giu,
+      /(?<!\S)(investigación|detective|crimen|asesinato|misterio)(?=\s|$)/giu,
+      /(?<!\S)(supervivencia|peligro|amenaza|riesgo)(?=\s|$)/giu,
+      /(?<!\S)(poder|trono|reino|imperio|reinado)(?=\s|$)/giu,
+      /(?<!\S)(rebelión|revolución|levantamiento|resistencia)(?=\s|$)/giu,
     ],
     de: [
-      /\b(reise|quest|mission|abenteuer|expedition)\b/gi,
-      /\b(entdeckung|offenbarung|geheimnis|mysterium|wahrheit)\b/gi,
-      /\b(konflikt|kampf|schlacht|krieg|konfrontation)\b/gi,
-      /\b(flucht|rettung|retten|schützen|verteidigen)\b/gi,
-      /\b(rache|verrat|täuschung|verschwörung|komplott)\b/gi,
-      /\b(transformation|veränderung|wachstum|entwicklung|evolution)\b/gi,
-      /\b(opfer|verlust|erlösung|vergebung)\b/gi,
-      /\b(romantik|liebe|beziehung|ehe|affäre)\b/gi,
-      /\b(ermittlung|detektiv|verbrechen|mord|mysterium)\b/gi,
-      /\b(überleben|gefahr|bedrohung|risiko)\b/gi,
-      /\b(macht|thron|königreich|reich|herrschaft)\b/gi,
-      /\b(rebellion|revolution|aufstand|widerstand)\b/gi,
+      /(?<!\S)(reise|quest|mission|abenteuer|expedition)(?=\s|$)/giu,
+      /(?<!\S)(entdeckung|offenbarung|geheimnis|mysterium|wahrheit)(?=\s|$)/giu,
+      /(?<!\S)(konflikt|kampf|schlacht|krieg|konfrontation)(?=\s|$)/giu,
+      /(?<!\S)(flucht|rettung|retten|schützen|verteidigen)(?=\s|$)/giu,
+      /(?<!\S)(rache|verrat|täuschung|verschwörung|komplott)(?=\s|$)/giu,
+      /(?<!\S)(transformation|veränderung|wachstum|entwicklung|evolution)(?=\s|$)/giu,
+      /(?<!\S)(opfer|verlust|erlösung|vergebung)(?=\s|$)/giu,
+      /(?<!\S)(romantik|liebe|beziehung|ehe|affäre)(?=\s|$)/giu,
+      /(?<!\S)(ermittlung|detektiv|verbrechen|mord|mysterium)(?=\s|$)/giu,
+      /(?<!\S)(überleben|gefahr|bedrohung|risiko)(?=\s|$)/giu,
+      /(?<!\S)(macht|thron|königreich|reich|herrschaft)(?=\s|$)/giu,
+      /(?<!\S)(rebellion|revolution|aufstand|widerstand)(?=\s|$)/giu,
     ]
   };
   

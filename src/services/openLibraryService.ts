@@ -2,9 +2,6 @@ import { Book } from "@/types/book";
 
 const OPEN_LIBRARY_API = "https://openlibrary.org";
 
-/* -----------------------------------------
-   Helpers réseau / parsing
-   ----------------------------------------- */
 async function fetchJson(path: string): Promise<any | null> {
   try {
     const url = path.startsWith("http") ? path : `${OPEN_LIBRARY_API}${path}.json`;
@@ -23,9 +20,6 @@ function extractDescriptionFromData(desc: any): string {
   return "";
 }
 
-/* -----------------------------------------
-   Helpers ISBN (nettoyage / validation / conversion)
-   ----------------------------------------- */
 function cleanIsbnRaw(input: any): string | null {
   if (!input) return null;
   const val = Array.isArray(input) ? input[0] : input;
@@ -74,7 +68,6 @@ function extractIsbnsFromIdentifiers(obj: any): string[] {
   return candidates;
 }
 
-// Retourne le premier ISBN normalisé (préférence ISBN-13, sinon conversion ISBN-10->13)
 function pickFirstIsbn(...sources: any[]): string {
   const collected: string[] = [];
 
@@ -84,7 +77,6 @@ function pickFirstIsbn(...sources: any[]): string {
       collected.push(...s.map((it: any) => String(it)));
     } else if (typeof s === "object") {
       collected.push(...extractIsbnsFromIdentifiers(s));
-      // fallback: try top-level arrays if present
       if (s.isbn) collected.push(...(Array.isArray(s.isbn) ? s.isbn.map(String) : [String(s.isbn)]));
       if (s.isbn_13) collected.push(...(Array.isArray(s.isbn_13) ? s.isbn_13.map(String) : [String(s.isbn_13)]));
       if (s.isbn_10) collected.push(...(Array.isArray(s.isbn_10) ? s.isbn_10.map(String) : [String(s.isbn_10)]));
@@ -93,13 +85,12 @@ function pickFirstIsbn(...sources: any[]): string {
     }
   }
 
-  // prefer isbn13
   for (const raw of collected) {
     const c = cleanIsbnRaw(raw);
     if (!c) continue;
     if (isIsbn13(c)) return c;
   }
-  // convert isbn10 -> isbn13
+  
   for (const raw of collected) {
     const c = cleanIsbnRaw(raw);
     if (!c) continue;
@@ -109,7 +100,7 @@ function pickFirstIsbn(...sources: any[]): string {
       return c;
     }
   }
-  // fallback: first cleaned
+  
   for (const raw of collected) {
     const c = cleanIsbnRaw(raw);
     if (c) return c;
@@ -117,9 +108,6 @@ function pickFirstIsbn(...sources: any[]): string {
   return "";
 }
 
-/* -----------------------------------------
-   Mapping helpers
-   ----------------------------------------- */
 function mapSearchResult(doc: any): Book {
   const isbn = pickFirstIsbn(doc.isbn, doc.isbn_13, doc.isbn_10);
   return {
@@ -150,9 +138,6 @@ function mapOpenLibraryBook(data: any): Book {
   };
 }
 
-/* -----------------------------------------
-   Enrichissement: edition -> work -> editions list
-   ----------------------------------------- */
 async function getEditionsForWork(workKey: string, limit = 10): Promise<any[]> {
   const path = `${workKey}/editions.json?limit=${limit}`;
   const data = await fetchJson(path);
@@ -163,7 +148,6 @@ async function getEditionsForWork(workKey: string, limit = 10): Promise<any[]> {
 async function enrichFromEditionOrWork(book: Book, doc: any): Promise<Book> {
   const enriched = { ...book };
 
-  // 1) try specific edition (fast)
   const editionKey = Array.isArray(doc.edition_key) && doc.edition_key[0] ? doc.edition_key[0] : null;
   if (editionKey) {
     const ed = await fetchJson(`/books/${editionKey}`);
@@ -175,7 +159,6 @@ async function enrichFromEditionOrWork(book: Book, doc: any): Promise<Book> {
     }
   }
 
-  // 2) try work object
   const workKey = doc.key || (Array.isArray(doc.work_key) && doc.work_key[0] ? doc.work_key[0] : null);
   if (workKey) {
     const wk = await fetchJson(workKey);
@@ -185,7 +168,6 @@ async function enrichFromEditionOrWork(book: Book, doc: any): Promise<Book> {
       const isbnWk = pickFirstIsbn(wk, wk.identifiers, wk.isbn, wk.isbn_13, wk.isbn_10);
       if (isbnWk && !enriched.isbn) enriched.isbn = isbnWk;
 
-      // 3) if still no ISBN, inspect editions list for the work
       if ((!enriched.isbn || enriched.isbn === "")) {
         const editions = await getEditionsForWork(workKey, 10);
         for (const edDoc of editions) {
@@ -202,16 +184,12 @@ async function enrichFromEditionOrWork(book: Book, doc: any): Promise<Book> {
   return enriched;
 }
 
-/* -----------------------------------------
-   API: searchBooks + getBookDescription
-   ----------------------------------------- */
 export async function searchBooks(query: string, searchType: "title" | "author" | "isbn"): Promise<Book[]> {
   try {
     if (searchType === "isbn") {
       const data = await fetchJson(`/isbn/${query}`);
       if (!data) return [];
       const book = mapOpenLibraryBook(data);
-      // try work description if missing
       if (!book.description && data.works?.[0]?.key) {
         const workDesc = await getBookDescription(data.works[0].key);
         if (workDesc) book.description = workDesc;
@@ -251,7 +229,6 @@ export async function getBookDescription(bookId: string): Promise<string> {
   const desc = extractDescriptionFromData(data.description);
   if (desc) return desc;
 
-  // try work -> description (editions handled elsewhere if needed)
   if (data.works?.[0]?.key) {
     const wk = await fetchJson(data.works[0].key);
     if (wk) return extractDescriptionFromData(wk.description);

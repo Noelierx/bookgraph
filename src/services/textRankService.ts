@@ -4,13 +4,16 @@ const stopWordsEn = new Set(['a', 'about', 'above', 'after', 'again', 'all', 'al
     'another','any', 'are', 'as', 'at', 'be', 'because', 'been', 'before', 'being', 'below', 'between',
     'both', 'but', 'by', 'came', 'can', 'come', 'could', 'did', 'do', 'does', 'during', 'each',
     'few', 'for', 'from', 'further', 'get', 'got', 'had', 'has', 'have', 'he', 'her', 'here',
-    'him', 'himself', 'his', 'how', 'i', 'if', 'in', 'into', 'is', 'it', 'like', 'make', 'many',
+    'him', 'himself', 'his', 'how', 'i', 'if', 'in', 'into', 'is', 'it', 'its', 'like', 'make', 'many',
     'me', 'might', 'more', 'most', 'much', 'must', 'my', 'never', 'no', 'not', 'now', 'of', 'on',
     'once', 'only', 'or', 'other', 'our', 'out', 'over', 'own', 'said', 'same', 'should', 'since',
     'some', 'still', 'such', 'take', 'than', 'that', 'the', 'their', 'them', 'then', 'there',
     'these', 'they', 'this', 'those', 'through', 'to', 'too', 'under', 'up', 'very', 'was',
     'way', 'we', 'well', 'were', 'what', 'when', 'where', 'which', 'while', 'who', 'why',
-    'will', 'with', 'would', 'you', 'your'
+    'will', 'with', 'would', 'you', 'your', 'yours', 'hers', 'theirs', 'ours', 'mine', 'herself',
+    'themselves', 'yourself', 'yourselves', 'ourselves', 'myself', 'itself', 'she',
+    'whom', 'whose', 'whichever', 'whatever', 'whenever', 'wherever', 'however', 'whether',
+    'shall', 'may', 'ought', 'dare', 'need', 'used'
 ]);
 
 const stopWordsFr = new Set(['le', 'de', 'et', 'à', 'un', 'il', 'être', 'en', 'avoir', 'que', 'pour',
@@ -18,21 +21,49 @@ const stopWordsFr = new Set(['le', 'de', 'et', 'à', 'un', 'il', 'être', 'en', 
     'autre', 'mais', 'ou', 'où', 'si', 'leur', 'y', 'dire', 'elle', 'depuis', 'car', 'deux', 'comment',
     'très', 'sans', 'nous', 'vous', 'lors', 'cette', 'celui', 'celle', 'ces', 'ceux', 'donc',
     'bien', 'aussi', 'peut', 'fait', 'faire', 'voir', 'aller', 'venir', 'temps', 'même', 'encore',
-    'été', 'déjà', 'là', 'après', 'dès', 'jusqu', 'plutôt', 'voilà'
+    'été', 'déjà', 'là', 'après', 'dès', 'jusqu', 'plutôt', 'voilà', 'lui', 'eux', 'elles', 'je', 'tu',
+    'moi', 'toi', 'soi', 'mes', 'tes', 'ses', 'nos', 'vos', 'leurs', 'mien', 'tien', 'sien', 'nôtre', 'vôtre',
+    'qui', 'quoi', 'dont', 'lequel', 'laquelle', 'lesquels', 'lesquelles', 'duquel', 'desquels',
+    'auquel', 'auxquels', 'auxquelles', 'quel', 'quelle', 'quels', 'quelles', 'combien', 'pourquoi',
+    'quand', 'est', 'sont', 'était', 'étaient', 'sera', 'seront', 'serait', 'seraient',
+    'avait', 'avaient', 'aura', 'auront', 'aurait', 'auraient', 'soit', 'soient', 'fût', 'fussent',
+    'des', 'moins', 'sous', 'contre', 'vers', 'chez', 'entre', 'pendant', 'avant', 'toujours',
+    'jamais', 'souvent', 'parfois', 'puis', 'ensuite', 'alors', 'maintenant', 'hier', 'demain'
 ]);
 
 const stopWordsEs = new Set(['el', 'la', 'de', 'que', 'y', 'a', 'en', 'un', 'ser', 'se', 'no', 'te', 'lo', 'le',
     'da', 'su', 'por', 'son', 'con', 'para', 'una', 'él', 'sobre', 'todo', 'las', 'más', 'si', 'al', 'del',
     'los', 'mi', 'pero', 'sus', 'me', 'hasta', 'donde', 'quien', 'desde', 'nos', 'durante', 'sin', 'muy',
     'entre', 'cuando', 'ya', 'también', 'solo', 'antes', 'como', 'tanto', 'vez', 'mucho', 'ahora',
-    'así', 'después', 'están', 'había', 'través', 'además', 'sólo', 'cómo', 'allí', 'días'
+    'así', 'después', 'estaban', 'había', 'través', 'además', 'sólo', 'allí', 'días', 'yo', 'tú',
+    'ella', 'nosotros', 'nosotras', 'vosotros', 'vosotras', 'ellos', 'ellas', 'usted', 'ustedes',
+    'mí', 'ti', 'sí', 'conmigo', 'contigo', 'consigo', 'mío', 'tuyo', 'suyo', 'nuestro', 'vuestro',
+    'quién', 'cual', 'cuál', 'cuales', 'cuáles', 'cuyo', 'cuya', 'cuyos', 'cuyas', 'qué',
+    'cuándo', 'dónde', 'cómo', 'porqué', 'cuánto', 'cuánta', 'cuántos', 'cuántas',
+    'es', 'está', 'están', 'era', 'eran', 'fue', 'fueron', 'será', 'serán', 'sería', 'serían',
+    'sea', 'sean', 'fuera', 'fueran', 'fuese', 'fuesen', 'siendo', 'sido',
+    'he', 'has', 'ha', 'hemos', 'habéis', 'han', 'habías', 'habíamos', 'habíais', 'habían',
+    'hube', 'hubiste', 'hubo', 'hubimos', 'hubisteis', 'hubieron', 'habré', 'habrás', 'habrá',
+    'habremos', 'habréis', 'habrán', 'habría', 'habrías', 'habríamos', 'habríais', 'habrían',
+    'haya', 'hayas', 'hayamos', 'hayáis', 'hayan', 'hubiera', 'hubieras', 'hubiéramos', 'hubierais', 'hubieran',
+    'hubiese', 'hubieses', 'hubiésemos', 'hubieseis', 'hubiesen', 'habiendo', 'habido',
+    'menos', 'bajo', 'contra', 'hacia', 'según', 'mientras', 'siempre', 'nunca', 'ayer', 'mañana'
 ]);
 
 const stopWordsDe = new Set(['der', 'die', 'und', 'in', 'den', 'von', 'zu', 'das', 'mit', 'sich', 'des', 'auf',
     'für', 'ist', 'im', 'dem', 'nicht', 'ein', 'eine', 'als', 'auch', 'es', 'an', 'werden', 'aus', 'er', 'hat',
     'dass', 'sie', 'nach', 'wird', 'bei', 'einer', 'um', 'am', 'sind', 'noch', 'wie', 'einem', 'über', 'einen',
     'so', 'zum', 'war', 'haben', 'nur', 'oder', 'aber', 'vor', 'zur', 'bis', 'mehr', 'durch', 'man', 'sein',
-    'wurde', 'sei', 'ihren', 'während', 'können', 'müssen', 'währen', 'größer', 'natürlich', 'tatsächlich'
+    'wurde', 'sei', 'ihren', 'während', 'können', 'müssen', 'währen', 'größer', 'natürlich', 'tatsächlich',
+    'ich', 'du', 'ihn', 'ihr', 'uns', 'euch', 'ihnen', 'mich', 'dich', 'mir', 'dir', 'ihm', 'wir',
+    'mein', 'dein', 'unser', 'euer', 'meiner', 'deiner', 'seiner', 'unserer', 'eurer', 'ihrer',
+    'wer', 'was', 'wem', 'wen', 'wessen', 'welche', 'welcher', 'welches', 'welchem', 'welchen',
+    'wo', 'wann', 'warum', 'wieso', 'weshalb', 'wohin', 'woher', 'womit', 'wovon', 'worüber',
+    'bin', 'bist', 'seid', 'warst', 'waren', 'wart', 'gewesen', 'werde', 'wirst',
+    'werdet', 'würde', 'würdest', 'würden', 'würdet', 'seist', 'seien', 'seiet', 'wäre',
+    'wärest', 'wären', 'wäret', 'seiend', 'habe', 'hast', 'habt', 'hatte', 'hattest',
+    'hatten', 'hattet', 'gehabt', 'hätte', 'hättest', 'hätten', 'hättet', 'habend',
+    'weniger', 'unter', 'gegen', 'ohne', 'zwischen', 'immer', 'nie', 'gestern', 'morgen'
 ]);
 
 function detectLanguage(text: string): 'en' | 'fr' | 'es' | 'de' | 'unknown' {
@@ -147,4 +178,4 @@ export function trExtractKeywords(text: string, topN = 5, windowSize = 2, langua
         .map(([word]) => word);
 }
 
-export { detectLanguage };
+export { detectLanguage, getStopWords };
