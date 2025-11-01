@@ -10,11 +10,10 @@ export interface Book {
 }
 
 export type RelationshipType = 
-  | "similar-themes"
-  | "similar-plots"
-  | "similar-concepts"
-  | "common-subjects"
-  | "mixed";
+  | "similar-themes"       // Themes in common (love, war, mystery, etc.)
+  | "similar-plots"        // Plot elements in common (journey, betrayal, etc.)
+  | "similar-concepts"     // Keywords/concepts in common
+  | "common-subjects";     // Specific subject categories in common
 
 export interface BookConnection {
   source: string;

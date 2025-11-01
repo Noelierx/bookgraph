@@ -1,5 +1,5 @@
 import { Book } from "@/types/book";
-import { searchBooks } from "./openLibraryService";
+import { enrichBook } from "./enrichmentService";
 import { removeDuplicatesFromList } from "./deduplicationService";
 
 export interface GoodReadsBook {
@@ -95,33 +95,6 @@ function parseCSVLine(line: string): string[] {
   return values;
 }
 
-async function enrichWithOpenLibraryData(book: Book): Promise<Book> {
-  if (book.isbn && book.isbn.length >= 10) {
-    try {
-      const openLibraryBooks = await searchBooks(book.isbn, "isbn");
-      
-      if (openLibraryBooks.length > 0) {
-        const olBook = openLibraryBooks[0];
-        
-        return {
-          id: olBook.id || book.id,
-          title: olBook.title || book.title,
-          author: (olBook.author && olBook.author !== "Unknown Author" && olBook.author.trim()) ? olBook.author : book.author,
-          isbn: olBook.isbn || book.isbn,
-          description: olBook.description || book.description,
-          publishYear: olBook.publishYear || book.publishYear,
-          subjects: olBook.subjects || book.subjects || [],
-          coverUrl: olBook.coverUrl || book.coverUrl,
-        };
-      }
-    } catch (error) {
-      console.error("Error during OpenLibrary enrichment:", error);
-    }
-  }
-  
-  return book;
-}
-
 function convertGoodReadsBookToBook(grBook: GoodReadsBook): Book | null {
   if (!grBook.Title || !grBook.Author) {
     return null;
@@ -185,8 +158,12 @@ export const importGoodReadsCSV = (
           
           const book = convertGoodReadsBookToBook(grBook);
           if (book) {
-            const enrichedBook = await enrichWithOpenLibraryData(book);
+            const enrichedBook = await enrichBook(book);
             books.push(enrichedBook);
+            
+            if (i < goodReadsBooks.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 100));
+            }
           }
         }
         onProgress?.(goodReadsBooks.length, goodReadsBooks.length, "Removing duplicates within import...");

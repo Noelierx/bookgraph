@@ -98,16 +98,30 @@ export default function HelpModal({ open, onClose }: HelpModalProps) {
         
         {/* Section Connexions */}
         <div className="mb-6">
-          <h3 className="text-lg font-medium mb-3">Improving book connections</h3>
+          <h3 className="text-lg font-medium mb-3">Book analysis and enrichment</h3>
+          <div className="bg-amber-50 dark:bg-amber-950/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800 mb-4">
+            <h4 className="font-medium mb-2 text-amber-900 dark:text-amber-100">
+              🔬 Smart Analysis with Auto-Enrichment
+            </h4>
+            <p className="text-sm text-amber-800 dark:text-amber-100 mb-2">
+              When you click "Analyze", BookGraph now automatically enriches your books with missing data before analyzing connections.
+            </p>
+            <ul className="text-sm text-amber-700 dark:text-amber-200 space-y-1 list-disc list-inside">
+              <li><strong>Data sources:</strong> Google Books and OpenLibrary APIs</li>
+              <li><strong>Enriched fields:</strong> Descriptions, subjects, cover images, ISBNs</li>
+              <li><strong>Better connections:</strong> More complete data = better relationship analysis</li>
+              <li><strong>Progress tracking:</strong> See enrichment progress in real-time</li>
+            </ul>
+          </div>
+          
           <p className="text-sm text-foreground mb-3">
-            If a book doesn't connect to others in the graph:
+            If a book still doesn't connect to others after analysis:
           </p>
           <ul className="list-disc list-inside text-sm space-y-2">
             <li><strong>Check the description:</strong> Descriptions help semantic analysis</li>
-            <li><strong>Edit the book:</strong> Use the "Edit" button to improve description/subjects/author</li>
-            <li><strong>Re-run analysis:</strong> Click "Analyze" after your modifications</li>
-            <li><strong>Add more books:</strong> A too small collection limits connections</li>
-            <li><strong>Automatic enrichment:</strong> Search automatically enriches metadata</li>
+            <li><strong>Edit manually:</strong> Use the "Edit" button to improve metadata</li>
+            <li><strong>Re-run analysis:</strong> Click "Analyze" again after modifications</li>
+            <li><strong>Add more books:</strong> Larger collections create more connection opportunities</li>
           </ul>
         </div>
         

@@ -5,7 +5,7 @@ interface ImportProgressProps {
   current: number;
   total: number;
   message: string;
-  type: "goodreads" | "json";
+  type: "goodreads" | "json" | "analysis";
 }
 
 export function ImportProgress({ isVisible, current, total, message, type }: ImportProgressProps) {
@@ -19,7 +19,9 @@ export function ImportProgress({ isVisible, current, total, message, type }: Imp
         <div className="space-y-4">
           <div className="text-center">
             <h3 className="text-lg font-semibold">
-              {type === "goodreads" ? "Importing GoodReads CSV" : "Importing JSON"}
+              {type === "goodreads" ? "Importing GoodReads CSV" : 
+               type === "json" ? "Importing JSON" : 
+               "Analyzing & Enriching Books"}
             </h3>
             <p className="text-sm text-muted-foreground mt-1">
               {message}
