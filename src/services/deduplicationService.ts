@@ -65,38 +65,30 @@ export function areTitlesSimilar(title1: string, title2: string): boolean {
   const words1 = title1.split(' ').filter(w => w.length > 0);
   const words2 = title2.split(' ').filter(w => w.length > 0);
   
-  // Check for substring matches (one title contained in another)
   if (title1.includes(title2) || title2.includes(title1)) return true;
   
-  // Check if one title starts with the other (handles truncated titles)
   const shorter = words1.length <= words2.length ? title1 : title2;
   const longer = words1.length <= words2.length ? title2 : title1;
   
   if (longer.startsWith(shorter)) {
-    // Allow if the longer title just adds subtitle or additional info
     const remaining = longer.substring(shorter.length).trim();
-    // If what remains starts with common separators, it's likely the same book
     if (remaining.match(/^[\s\-\:\.\,\;]/)) {
       return true;
     }
   }
   
-  // For very short titles (1-2 words), require exact match to avoid false positives
   if (words1.length <= 2 || words2.length <= 2) {
     return title1 === title2;
   }
   
   // For short titles (3 words), be more strict
   if (words1.length <= 3 && words2.length <= 3) {
-    // Allow one word difference for 3-word titles
     const commonWords = words1.filter(w => words2.includes(w));
     return commonWords.length >= Math.min(words1.length, words2.length) - 1;
   }
   
-  // For longer titles, use word-based similarity but consider all words
   const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'of', 'in', 'on', 'at', 'to', 'for', 'with', 'by']);
   
-  // Keep significant words (length > 2) and important short words that aren't stop words
   const significantWords1 = words1.filter(w => w.length > 2 || !stopWords.has(w));
   const significantWords2 = words2.filter(w => w.length > 2 || !stopWords.has(w));
   
@@ -105,7 +97,6 @@ export function areTitlesSimilar(title1: string, title2: string): boolean {
   const commonWords = significantWords1.filter(w => significantWords2.includes(w));
   const similarity = commonWords.length / Math.max(significantWords1.length, significantWords2.length);
   
-  // Require higher similarity for titles with stop words preserved
   return similarity > 0.75;
 }
 
@@ -119,7 +110,6 @@ export function mergeBookData(existingBook: Book, newBook: Book): Book {
   const existingAuthorNorm = normalizeAuthor(existingBook.author);
   const newAuthorNorm = normalizeAuthor(newBook.author);
   
-  // Only update author if new book has meaningful author data
   if (existingAuthorNorm === 'unknown author' && newAuthorNorm !== 'unknown author' && newBook.author.trim()) {
     merged.author = newBook.author;
   } else if (newAuthorNorm !== 'unknown author' && newBook.author.trim() && 
@@ -302,21 +292,11 @@ export function removeDuplicatesFromList(books: Book[]): { uniqueBooks: Book[]; 
 }
 
 /**
- * Enrich book data using centralized enrichment service
- * @deprecated Use enrichmentService.enrichBook instead
- */
-export async function enrichBookWithHybridSearch(book: Book): Promise<Book> {
-  const { enrichBook } = await import("./enrichmentService");
-  return enrichBook(book);
-}
-
-/**
  * Enhanced deduplication with centralized enrichment
  */
 export async function removeDuplicatesWithEnrichment(books: Book[]): Promise<{uniqueBooks: Book[], duplicatesCount: number}> {
   const result = removeDuplicatesFromList(books);
   
-  // Enrich unique books with missing data using centralized service
   const { enrichBookCollection } = await import("./enrichmentService");
   const enrichedBooks = await enrichBookCollection(result.uniqueBooks);
   

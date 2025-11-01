@@ -1,20 +1,9 @@
 # 📚 BookGraph
 
-**BookGraph** helps you explore the hidden connections between your books.
-
-- Data is saved in **localStorage** under the key `book-graph-data`.  
-- Enrichment uses **OpenLibrary** and **Google Books** APIs — may take a few seconds for large collections due to rate limiting and API delays.  
-- **Goodreads imports** automatically enrich all books with metadata from multiple sources, which can take several minutes for large libraries.  
-- Google Books categories are automatically merged into book subjects for better categorization.  
-- If a book doesn't connect to others, try adding or refining its **description** or **subjects**, then click *Analyze* again.  
-- The enrichment service intelligently combines data from multiple sources, preferring more complete information while avoiding duplicates.der the key `book-graph-data`.  
-- Enrichment uses **OpenLibrary** and **Google Books** APIs — may take a few seconds for large collections due to rate limiting and API delays.  
-- Google Books categories are automatically merged into book subjects for better categorization.  
-- If a book doesn't connect to others, try adding or refining its **description** or **subjects**, then click *Analyze* again.  
-- The enrichment service intelligently combines data from multiple sources, preferring more complete information while avoiding duplicates. your books.  
+**BookGraph** helps you explore the hidden connections between your books.  
 Search, collect, analyze, and visualize how your favorite reads relate to one another.
 
-<img width="1443" height="854" alt="Capture d’écran 2025-10-22 à 17 52 50" src="https://github.com/user-attachments/assets/b328bd1a-ae42-40b9-aa2b-4da0d161c275" />
+<img width="1443" height="854" alt="Capture d'écran 2025-10-22 à 17 52 50" src="https://github.com/user-attachments/assets/b328bd1a-ae42-40b9-aa2b-4da0d161c275" />
 
 ---
 
@@ -26,8 +15,8 @@ Search, collect, analyze, and visualize how your favorite reads relate to one an
 - 🕸️ **Interactive graph** powered by *ForceGraph2D* — fully responsive with drag / zoom / pan.  
 - 📖 **Book details** with ISBN, subjects, and description — includes *Edit* / *Delete*.  
 - 💾 **Import / Export** your collection as JSON.  
-- � **Goodreads Import** from CSV exports with automatic enrichment.  
-- �💡 **Help modal** with tips for improving connections.  
+- 📚 **Goodreads Import** from CSV exports with automatic enrichment.  
+- 💡 **Help modal** with tips for improving connections.  
 - 🧹 **Clear button** to reset search results.  
 - ✍️ **Manual book entry** with field validation.
 
@@ -119,6 +108,17 @@ BookGraph uses a sophisticated multi-source enrichment pipeline:
 - **Rate Limiting**: Built-in delays between API calls to respect service limits
 
 The enrichment service (`enrichmentService.ts`) centralizes all this logic, making it easy to maintain and extend.
+
+---
+
+## 💡 Notes
+
+- Data is saved in **localStorage** under the key `book-graph-data`.  
+- Enrichment uses **OpenLibrary** and **Google Books** APIs — may take a few seconds for large collections due to rate limiting and API delays.  
+- **Goodreads imports** automatically enrich all books with metadata from multiple sources, which can take several minutes for large libraries.  
+- Google Books categories are automatically merged into book subjects for better categorization.  
+- If a book doesn't connect to others, try adding or refining its **description** or **subjects**, then click *Analyze* again.  
+- The enrichment service intelligently combines data from multiple sources, preferring more complete information while avoiding duplicates.
 
 ---
 

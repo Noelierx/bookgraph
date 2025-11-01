@@ -16,21 +16,18 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 const Index = () => {
   const {
-    // State
     books,
     connections,
     searchResults,
     selectedBook,
     existingBookIds,
     
-    // Loading states
     isSearching,
     isAnalyzing,
     isImportingGoodReads,
     isImportingJSON,
     importProgress,
     
-    // Modal states
     editingBook,
     showEditDialog,
     showHelpModal,
@@ -39,7 +36,6 @@ const Index = () => {
     visibleConnectionTypes,
     selectedBookId,
     
-    // Setters
     setSelectedBookId,
     setSearchResults,
     setShowEditDialog,
@@ -48,7 +44,6 @@ const Index = () => {
     setConnectionModalBook,
     setVisibleConnectionTypes,
     
-    // Handlers
     handleSearch,
     handleAddBook,
     handleRemoveBook,
@@ -100,7 +95,6 @@ const Index = () => {
     };
   }, [books, connections]);
 
-  // Détermine quel modal de progression afficher
   const getProgressModal = () => {
     if (isAnalyzing) return { isVisible: true, type: "analysis" as const };
     if (isImportingGoodReads) return { isVisible: true, type: "goodreads" as const };

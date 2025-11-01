@@ -35,13 +35,11 @@ export function BookConnectionsModal({
   onClose, 
   onBookClick 
 }: BookConnectionsModalProps) {
-  // Find all connections for this book that match the current filters
   const bookConnections = connections.filter(
     conn => (conn.source === book.id || conn.target === book.id) &&
             visibleTypes.has(conn.type || "similar-concepts")
   );
 
-  // Check if all types are selected (to show appropriate message)
   const allTypesSelected = visibleTypes.size === Object.keys(RELATIONSHIP_LABELS).length;
 
   const getConnectedBook = (connection: BookConnection): Book | undefined => {

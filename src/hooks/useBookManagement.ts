@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Book, BookConnection, RelationshipType } from "@/types/book";
-import { searchBooks } from "@/services/hybridSearchService";
+import { hybridSearch } from "@/services/enrichmentService";
 import { analyzeBookConnectionsWithEnrichment, analyzeBookConnections } from "@/services/connectionService";
 import { exportBooksToJSON, importBooksFromJSON } from "@/services/importExportService";
 import { importGoodReadsCSV } from "@/services/goodreadsImportService";
@@ -15,14 +15,12 @@ export function useBookManagement() {
   const [searchResults, setSearchResults] = useState<Book[]>([]);
   const [selectedBookId, setSelectedBookId] = useState<string | null>(null);
   
-  // Loading states
   const [isSearching, setIsSearching] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isImportingGoodReads, setIsImportingGoodReads] = useState(false);
   const [isImportingJSON, setIsImportingJSON] = useState(false);
   const [importProgress, setImportProgress] = useState({ current: 0, total: 0, message: "" });
   
-  // Modal states
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
@@ -32,7 +30,6 @@ export function useBookManagement() {
     new Set(["similar-themes", "similar-plots", "similar-concepts", "common-subjects"])
   );
 
-  // Load/save from localStorage
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
@@ -52,7 +49,6 @@ export function useBookManagement() {
     }
   }, [books]);
 
-  // Auto-update connections when books change
   useEffect(() => {
     const updateConnections = async () => {
       if (books.length >= 2) {
@@ -65,15 +61,13 @@ export function useBookManagement() {
     updateConnections();
   }, [books]);
 
-  // Computed values
   const selectedBook = books.find(b => b.id === selectedBookId);
   const existingBookIds = useMemo(() => new Set(books.map(b => b.id)), [books]);
 
-  // Handlers
   const handleSearch = async (query: string, type: "title" | "author" | "isbn") => {
     setIsSearching(true);
     try {
-      const results = await searchBooks(query, type);
+      const results = await hybridSearch(query, type);
       setSearchResults(results);
       if (results.length === 0) {
         toast.info("No books found. Try a different search or add manually.");
@@ -245,21 +239,18 @@ export function useBookManagement() {
   };
 
   return {
-    // State
     books,
     connections,
     searchResults,
     selectedBook,
     existingBookIds,
     
-    // Loading states
     isSearching,
     isAnalyzing,
     isImportingGoodReads,
     isImportingJSON,
     importProgress,
     
-    // Modal states
     editingBook,
     showEditDialog,
     showHelpModal,
@@ -268,7 +259,6 @@ export function useBookManagement() {
     visibleConnectionTypes,
     selectedBookId,
     
-    // Setters
     setSelectedBookId,
     setSearchResults,
     setEditingBook,
@@ -278,7 +268,6 @@ export function useBookManagement() {
     setConnectionModalBook,
     setVisibleConnectionTypes,
     
-    // Handlers
     handleSearch,
     handleAddBook,
     handleRemoveBook,

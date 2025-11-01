@@ -5,7 +5,6 @@ import { searchGoogleBooks } from "./googleBooksService";
 interface EnrichmentOptions {
   includeOpenLibrary?: boolean;
   includeGoogleBooks?: boolean;
-  maxRetries?: number;
   delayBetweenCalls?: number;
 }
 
@@ -96,42 +95,24 @@ async function enrichWithGoogleBooks(book: Book, options: EnrichmentOptions): Pr
   try {
     let results: Book[] = [];
 
-    // Recherche par ISBN d'abord si disponible
     if (book.isbn && book.isbn.length >= 10) {
       results = await searchGoogleBooks(book.isbn, "isbn");
-      if (results.length > 0) {
-        return mergeBookData(book, results[0], "GoogleBooks");
-      }
     }
 
-    // Fallback sur recherche par titre + auteur
-    if (book.title && book.author && book.author !== "Unknown Author") {
+    if (results.length === 0 && book.title && book.author && book.author !== "Unknown Author") {
       const query = `${book.title} ${book.author}`;
       results = await searchGoogleBooks(query, "title");
 
-      if (results.length > 0) {
-        // Trouver la meilleure correspondance
-        const bestMatch = results.find(result =>
-          result.title.toLowerCase().includes(book.title.toLowerCase()) &&
-          result.author.toLowerCase().includes(book.author.toLowerCase())
-        );
+      const bestMatch = results.find(result =>
+        result.title.toLowerCase().includes(book.title.toLowerCase()) &&
+        result.author.toLowerCase().includes(book.author.toLowerCase())
+      );
 
-        if (bestMatch) {
-          return mergeBookData(book, bestMatch, "GoogleBooks");
-        } else {
-          // Si pas de correspondance parfaite, prendre le premier résultat
-          // qui peut quand même avoir des catégories/subjects utiles
-          return mergeBookData(book, results[0], "GoogleBooks");
-        }
+      if (bestMatch) {
+        return mergeBookData(book, bestMatch, "GoogleBooks");
       }
-    }
-
-    // Recherche par titre seul si pas de correspondance auteur
-    if (book.title && results.length === 0) {
-      results = await searchGoogleBooks(book.title, "title");
-      if (results.length > 0) {
-        return mergeBookData(book, results[0], "GoogleBooks");
-      }
+    } else if (results.length > 0) {
+      return mergeBookData(book, results[0], "GoogleBooks");
     }
   } catch (error) {
     console.error("Google Books enrichment failed:", error);
