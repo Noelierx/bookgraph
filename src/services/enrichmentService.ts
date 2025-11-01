@@ -11,7 +11,6 @@ interface EnrichmentOptions {
 const DEFAULT_OPTIONS: EnrichmentOptions = {
   includeOpenLibrary: true,
   includeGoogleBooks: true,
-  maxRetries: 3,
   delayBetweenCalls: 100,
 };
 

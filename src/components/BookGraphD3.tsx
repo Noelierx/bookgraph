@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useLayoutEffect, useMemo, useCallback } from "react";
+import { useEffect, useRef, useState, useLayoutEffect, useMemo } from "react";
 import { GraphData, RelationshipType } from "@/types/book";
 import * as d3 from "d3";
 

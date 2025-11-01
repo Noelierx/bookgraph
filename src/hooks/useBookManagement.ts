@@ -222,11 +222,11 @@ export function useBookManagement() {
         
         let message = '';
         if (addedCount > 0 && mergedCount > 0) {
-          message = `Added ${addedCount} new books and merged ${mergedCount} duplicates from GoodReads`;
+          message = `Added ${addedCount} new books and merged ${mergedCount} duplicates from Goodreads`;
         } else if (addedCount > 0) {
           message = `Imported ${addedCount} books from Goodreads`;
         } else if (mergedCount > 0) {
-          message = `Merged ${mergedCount} books with existing collection from GoodReads`;
+          message = `Merged ${mergedCount} books with existing collection from Goodreads`;
         } else {
           message = "No new books to import from Goodreads";
         }
@@ -234,7 +234,7 @@ export function useBookManagement() {
         toast.success(message);
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to import GoodReads CSV");
+      toast.error(error instanceof Error ? error.message : "Failed to import Goodreads CSV");
     } finally {
       setIsImportingGoodReads(false);
     }

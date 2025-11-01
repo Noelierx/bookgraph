@@ -109,9 +109,6 @@ export async function analyzeBookConnections(books: Book[]): Promise<BookConnect
   return connections;
 }
 
-const GENERIC_SUBJECTS = new Set([
-]);
-
 function getSpecificSubjects(subjects: string[]): string[] {
   const specificSubjects: string[] = [];
   
@@ -136,8 +133,7 @@ function getSpecificSubjects(subjects: string[]): string[] {
 
 function isGenericSubject(subject: string): boolean {
   const normalized = subject.toLowerCase().trim();
-  return GENERIC_SUBJECTS.has(normalized) || 
-         normalized.length < 3 ||
+  return normalized.length < 3 ||
          /^\d+$/.test(normalized);
 }
 
